@@ -2,11 +2,17 @@ package com.blogsystem.service;
 
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.User;
+import com.blogsystem.entity.Category;
+import com.blogsystem.entity.Tag;
 import com.blogsystem.repository.BlogRepository;
+import com.blogsystem.service.CategoryService;
+import com.blogsystem.service.TagService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,20 +21,59 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class BlogService {
 
     private final BlogRepository blogRepository;
     private final UserService userService;
+    private final CategoryService categoryService;
+    private final TagService tagService;
+
+    public BlogService(BlogRepository blogRepository,
+            UserService userService,
+            @Lazy CategoryService categoryService,
+            @Lazy TagService tagService) {
+        this.blogRepository = blogRepository;
+        this.userService = userService;
+        this.categoryService = categoryService;
+        this.tagService = tagService;
+    }
 
     // 创建博客
     public Blog createBlog(Blog blog) {
+        // 处理分类
+        if (blog.getCategory() != null && !blog.getCategory().trim().isEmpty()) {
+            Optional<Category> categoryOpt = categoryService.findByName(blog.getCategory());
+            if (categoryOpt.isPresent()) {
+                blog.setCategoryEntity(categoryOpt.get());
+            }
+        }
+
+        // 处理标签
+        if (blog.getTags() != null && !blog.getTags().trim().isEmpty()) {
+            List<Tag> tagEntities = tagService.parseAndCreateTags(blog.getTags());
+            blog.setTagEntities(tagEntities);
+        }
+
         return blogRepository.save(blog);
     }
 
     // 更新博客
     public Blog updateBlog(Blog blog) {
+        // 处理分类
+        if (blog.getCategory() != null && !blog.getCategory().trim().isEmpty()) {
+            Optional<Category> categoryOpt = categoryService.findByName(blog.getCategory());
+            if (categoryOpt.isPresent()) {
+                blog.setCategoryEntity(categoryOpt.get());
+            }
+        }
+
+        // 处理标签
+        if (blog.getTags() != null && !blog.getTags().trim().isEmpty()) {
+            List<Tag> tagEntities = tagService.parseAndCreateTags(blog.getTags());
+            blog.setTagEntities(tagEntities);
+        }
+
         return blogRepository.save(blog);
     }
 
@@ -81,6 +126,48 @@ public class BlogService {
     public List<Blog> getPopularBlogs(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
         return blogRepository.findPopularBlogs(pageable);
+    }
+
+    // 管理员搜索所有博客（包括草稿）
+    public Page<Blog> searchAllBlogs(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return blogRepository.findByTitleContainingIgnoreCase(keyword, pageable);
+    }
+
+    // 管理员搜索草稿博客
+    public Page<Blog> searchDraftBlogs(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return blogRepository.findByTitleContainingIgnoreCaseAndIsPublishedFalse(keyword, pageable);
+    }
+
+    // 获取所有博客（管理员）
+    public Page<Blog> findAllBlogs(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return blogRepository.findAll(pageable);
+    }
+
+    // 获取草稿博客
+    public Page<Blog> findDraftBlogs(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return blogRepository.findByIsPublishedFalseOrderByCreatedAtDesc(pageable);
+    }
+
+    // 获取博客总数
+    public long getTotalBlogsCount() {
+        return blogRepository.count();
+    }
+
+    // 获取已发布博客数量
+    public long getPublishedBlogsCount() {
+        return blogRepository.countByIsPublishedTrue();
+    }
+
+    // 更新博客状态
+    public Blog updateBlogStatus(Long id, Boolean isPublished) {
+        Blog blog = blogRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("博客不存在"));
+        blog.setIsPublished(isPublished);
+        return blogRepository.save(blog);
     }
 
     // 获取最新博客

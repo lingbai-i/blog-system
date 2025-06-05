@@ -8,6 +8,7 @@ import com.blogsystem.service.UserService;
 import com.blogsystem.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class DataInitializer implements CommandLineRunner {
     private final UserService userService;
     private final BlogService blogService;
     private final CommentService commentService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -31,12 +33,10 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeData() {
         // 创建管理员用户
         User admin = new User();
-        admin.setAccount("admin");
-        admin.setUsername("admin");
-        admin.setEmail("admin@blog.com");
-        admin.setPassword("admin123"); // 实际应用中应该加密
-        admin.setFullName("系统管理员");
-        admin.setBio("博客系统管理员");
+        admin.setAccount("admin"); // 确保方法名正确
+        admin.setPassword(passwordEncoder.encode("admin"));
+        admin.setUsername("Admin User");
+        admin.setEmail("admin@example.com");
         admin.setIsAdmin(true);
         admin = userService.createUser(admin);
 

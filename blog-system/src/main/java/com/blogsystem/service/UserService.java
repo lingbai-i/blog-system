@@ -84,6 +84,11 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    // 获取用户总数
+    public long getTotalUsersCount() {
+        return userRepository.count();
+    }
+
     // 用户注册
     public User registerUser(String account, String username, String email, String password, String fullName) {
         // 检查账号、用户名和邮箱是否已存在

@@ -37,7 +37,7 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     List<Blog> findLatestBlogs(Pageable pageable);
 
     // 根据标签搜索博客
-    @Query("SELECT b FROM Blog b WHERE b.tags LIKE %:tag% AND b.isPublished = true ORDER BY b.createdAt DESC")
+    @Query("SELECT DISTINCT b FROM Blog b JOIN b.tagEntities t WHERE t.name = :tag AND b.isPublished = true ORDER BY b.createdAt DESC")
     Page<Blog> findByTagsContaining(@Param("tag") String tag, Pageable pageable);
 
     // 获取所有分类
@@ -46,4 +46,13 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     // 统计已发布博客数量
     long countByIsPublishedTrue();
+
+    // 管理员搜索所有博客（包括草稿）
+    Page<Blog> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    // 管理员搜索草稿博客
+    Page<Blog> findByTitleContainingIgnoreCaseAndIsPublishedFalse(String title, Pageable pageable);
+
+    // 获取草稿博客
+    Page<Blog> findByIsPublishedFalseOrderByCreatedAtDesc(Pageable pageable);
 }

@@ -81,11 +81,13 @@ CREATE TABLE IF NOT EXISTS tags (
     description TEXT COMMENT '标签描述',
     color VARCHAR(7) DEFAULT '#007bff' COMMENT '标签颜色',
     usage_count INT DEFAULT 0 COMMENT '使用次数',
+    is_active BOOLEAN DEFAULT TRUE COMMENT '是否激活',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_name (name),
     INDEX idx_slug (slug),
-    INDEX idx_usage_count (usage_count)
+    INDEX idx_usage_count (usage_count),
+    INDEX idx_is_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签表';
 
 -- 博客标签关联表

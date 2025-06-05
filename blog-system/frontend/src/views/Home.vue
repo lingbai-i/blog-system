@@ -9,7 +9,8 @@
         <nav class="nav">
           <div class="nav-links">
             <a href="#home" class="nav-link">首页</a>
-            <a href="#blogs" class="nav-link">文章</a>
+            <router-link to="/articles" class="nav-link">文章</router-link>
+            <a @click="openSearchDialog" class="nav-link search-nav-link">搜索</a>
             <a href="#features" class="nav-link">功能</a>
             <a href="#api" class="nav-link">API</a>
           </div>
@@ -19,10 +20,6 @@
               <el-button v-if="userRole === 'admin'" @click="goToAdmin" size="small">管理后台</el-button>
               <el-button v-else @click="goToUserCenter" size="small">个人中心</el-button>
               <el-button @click="handleLogout" size="small">退出</el-button>
-            </template>
-            <template v-else>
-              <el-button @click="goToLogin" size="small">登录</el-button>
-              <el-button @click="goToRegister" type="primary" size="small">注册</el-button>
             </template>
           </div>
         </nav>
@@ -37,8 +34,14 @@
           <h1>欢迎来到个人博客系统</h1>
           <p>一个功能完整的Spring Boot博客系统，支持文章管理、用户系统、评论功能等</p>
           <div class="hero-buttons">
-            <el-button type="primary" @click="loadStats" :loading="statsLoading">查看系统统计</el-button>
-            <el-button v-if="isLoggedIn" @click="goToAdmin">进入管理系统</el-button>
+            <template v-if="isLoggedIn">
+              <el-button type="primary" @click="loadStats" :loading="statsLoading">查看系统统计</el-button>
+              <el-button @click="goToAdmin">进入管理系统</el-button>
+            </template>
+            <template v-else>
+              <el-button type="primary" @click="goToLogin">登录</el-button>
+              <el-button @click="goToRegister">注册</el-button>
+            </template>
           </div>
         </section>
 
@@ -60,21 +63,19 @@
           </div>
         </section>
 
-        <!-- 搜索栏 -->
+        <!-- 搜索按钮 -->
         <section id="blogs" class="search-section">
           <h2>文章列表</h2>
           <div class="search-bar">
-            <el-input
-              v-model="searchKeyword"
-              placeholder="搜索文章..."
-              class="search-input"
-              @keyup.enter="searchBlogs"
-              clearable
+            <el-button 
+              type="primary" 
+              size="large" 
+              @click="openSearchDialog" 
+              :icon="Search"
+              class="search-trigger-btn"
             >
-              <template #append>
-                <el-button @click="searchBlogs" :icon="Search">搜索</el-button>
-              </template>
-            </el-input>
+              点击搜索文章
+            </el-button>
           </div>
         </section>
 
@@ -242,13 +243,150 @@
         <p>&copy; 2025 个人博客系统. 基于 Spring Boot 开发.</p>
       </div>
     </footer>
+
+    <!-- 搜索弹窗 -->
+    <el-dialog
+      v-model="searchDialogVisible"
+      title="搜索文章"
+      width="600px"
+      :before-close="handleSearchDialogClose"
+      class="search-dialog"
+    >
+      <div class="search-dialog-content">
+        <!-- 搜索表单 -->
+        <div class="search-form">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="请输入关键词搜索文章..."
+            size="large"
+            class="search-input"
+            @keyup.enter="performSearch"
+            clearable
+            autofocus
+          >
+            <template #prefix>
+              <el-icon class="search-icon"><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <!-- 分类和标签筛选 -->
+        <div class="filter-section">
+          <div class="filter-group">
+            <label class="filter-label">
+              <el-icon><Folder /></el-icon>
+              分类筛选
+            </label>
+            <el-select
+              v-model="selectedCategory"
+              placeholder="选择分类"
+              clearable
+              class="category-select"
+            >
+              <el-option
+                v-for="category in categories"
+                :key="category.id || category"
+                :label="category.name || category"
+                :value="category.name || category"
+              >
+                <div class="option-content">
+                  <el-icon><Folder /></el-icon>
+                  <span>{{ category.name || category }}</span>
+                </div>
+              </el-option>
+            </el-select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">
+              <el-icon><Star /></el-icon>
+              标签筛选
+            </label>
+            <el-select
+              v-model="selectedTag"
+              placeholder="选择标签"
+              clearable
+              class="tag-select"
+            >
+              <el-option
+                v-for="tag in tags"
+                :key="tag.id || tag"
+                :label="tag.name || tag"
+                :value="tag.name || tag"
+              >
+                <div class="option-content">
+                  <el-icon><Star /></el-icon>
+                  <span>{{ tag.name || tag }}</span>
+                </div>
+              </el-option>
+            </el-select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label">
+              <el-icon><TrendCharts /></el-icon>
+              排序方式
+            </label>
+            <el-select
+              v-model="sortBy"
+              placeholder="选择排序"
+              class="sort-select"
+            >
+              <el-option label="最新发布" value="createTime">
+                <div class="option-content">
+                  <el-icon><Calendar /></el-icon>
+                  <span>最新发布</span>
+                </div>
+              </el-option>
+              <el-option label="最受欢迎" value="popularity">
+                <div class="option-content">
+                  <el-icon><Star /></el-icon>
+                  <span>最受欢迎</span>
+                </div>
+              </el-option>
+              <el-option label="浏览最多" value="views">
+                <div class="option-content">
+                  <el-icon><View /></el-icon>
+                  <span>浏览最多</span>
+                </div>
+              </el-option>
+            </el-select>
+          </div>
+        </div>
+
+        <!-- 搜索建议 -->
+        <div v-if="!searchKeyword && !selectedCategory" class="search-suggestions">
+          <h4>热门搜索</h4>
+          <div class="suggestion-tags">
+            <el-tag
+              v-for="suggestion in searchSuggestions"
+              :key="suggestion"
+              @click="selectSuggestion(suggestion)"
+              class="suggestion-tag"
+              effect="plain"
+            >
+              {{ suggestion }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="clearSearch" :icon="Delete">清除</el-button>
+          <el-button type="primary" @click="performSearch" :icon="Search">
+            搜索
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, User, Calendar, View } from '@element-plus/icons-vue'
+import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const router = useRouter()
@@ -270,6 +408,15 @@ const systemStats = ref({
   totalComments: 0,
   totalUsers: 0
 })
+
+// 搜索弹窗相关数据
+const searchDialogVisible = ref(false)
+const selectedCategory = ref('')
+const selectedTag = ref('')
+const sortBy = ref('latest')
+const categories = ref([])
+const tags = ref([])
+const searchSuggestions = ref(['Vue.js', 'Spring Boot', 'JavaScript', 'Java', '前端开发', '后端开发', '数据库', 'API设计'])
 
 // 获取博客列表
 const fetchBlogs = async () => {
@@ -347,10 +494,113 @@ const getMockBlogs = () => {
   ]
 }
 
-// 搜索博客
-const searchBlogs = () => {
-  currentPage.value = 1
-  fetchBlogs()
+// 打开搜索弹窗
+const openSearchDialog = () => {
+  searchDialogVisible.value = true
+  fetchCategories()
+  fetchTags()
+}
+
+// 关闭搜索弹窗
+const handleSearchDialogClose = () => {
+  searchDialogVisible.value = false
+}
+
+// 执行搜索
+const performSearch = () => {
+  const query = {}
+  
+  if (searchKeyword.value.trim()) {
+    query.keyword = searchKeyword.value.trim()
+  }
+  
+  if (selectedCategory.value) {
+     query.category = selectedCategory.value
+   }
+   
+   if (selectedTag.value) {
+     query.tag = selectedTag.value
+   }
+  
+  if (sortBy.value) {
+    query.sortBy = sortBy.value
+  }
+  
+  // 关闭弹窗并跳转到文章页面
+  searchDialogVisible.value = false
+  router.push({ path: '/articles', query })
+}
+
+// 清除搜索条件
+const clearSearch = () => {
+  searchKeyword.value = ''
+  selectedCategory.value = ''
+  selectedTag.value = ''
+  sortBy.value = 'latest'
+}
+
+// 选择搜索建议
+const selectSuggestion = (suggestion) => {
+  searchKeyword.value = suggestion
+}
+
+// 获取分类列表
+const fetchCategories = async () => {
+  try {
+    const response = await axios.get('/api/categories')
+    if (response.data && Array.isArray(response.data)) {
+      categories.value = response.data
+    } else {
+      // 使用模拟分类数据
+      categories.value = [
+        { id: 1, name: '技术分享' },
+        { id: 2, name: '生活随笔' },
+        { id: 3, name: '学习笔记' },
+        { id: 4, name: '项目经验' }
+      ]
+    }
+  } catch (error) {
+    console.error('获取分类失败:', error)
+    // 使用旧接口作为备选
+    try {
+      const fallbackResponse = await axios.get('/api/blogs/categories')
+      if (fallbackResponse.data) {
+        categories.value = fallbackResponse.data.map(cat => 
+          typeof cat === 'string' ? { name: cat } : cat
+        )
+      }
+    } catch (fallbackError) {
+      console.error('获取分类失败（备选接口）:', fallbackError)
+      // 使用模拟分类数据
+      categories.value = [
+        { id: 1, name: '技术分享' },
+        { id: 2, name: '生活随笔' },
+        { id: 3, name: '学习笔记' },
+        { id: 4, name: '项目经验' }
+      ]
+    }
+  }
+}
+
+// 获取标签列表
+const fetchTags = async () => {
+  try {
+    const response = await axios.get('/api/tags/active')
+    if (response.data) {
+      tags.value = response.data
+    }
+  } catch (error) {
+    console.error('获取标签失败:', error)
+    // 使用模拟数据
+    tags.value = [
+      { id: 1, name: 'Vue.js' },
+      { id: 2, name: 'JavaScript' },
+      { id: 3, name: 'Java' },
+      { id: 4, name: 'Spring Boot' },
+      { id: 5, name: '前端开发' },
+      { id: 6, name: '后端开发' }
+    ]
+  }
 }
 
 // 跳转到博客详情
@@ -921,6 +1171,200 @@ onMounted(() => {
   margin: 0;
 }
 
+/* 搜索弹窗样式 */
+.search-trigger-btn {
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  border: none;
+  border-radius: 25px;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+  transition: all 0.3s ease;
+}
+
+.search-trigger-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+.search-nav-link {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.search-nav-link:hover {
+  color: #4f46e5;
+}
+
+:deep(.search-dialog) {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+:deep(.search-dialog .el-dialog__header) {
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 20px 24px;
+  margin: 0;
+}
+
+:deep(.search-dialog .el-dialog__title) {
+  color: white;
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+:deep(.search-dialog .el-dialog__headerbtn .el-dialog__close) {
+  color: white;
+  font-size: 1.2rem;
+}
+
+:deep(.search-dialog .el-dialog__body) {
+  padding: 30px 24px;
+  background: #f8fafc;
+}
+
+.search-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.search-form .search-input {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-form :deep(.el-input__wrapper) {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  padding: 0 16px;
+}
+
+.search-form :deep(.el-input__wrapper:hover) {
+  border-color: #4f46e5;
+}
+
+.search-form :deep(.el-input__wrapper.is-focus) {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.search-icon {
+  color: #4f46e5;
+  font-size: 1.1rem;
+}
+
+.filter-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.category-select,
+.tag-select,
+.sort-select {
+  border-radius: 8px;
+}
+
+.category-select :deep(.el-input__wrapper),
+.tag-select :deep(.el-input__wrapper),
+.sort-select :deep(.el-input__wrapper) {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.category-select :deep(.el-input__wrapper:hover),
+.tag-select :deep(.el-input__wrapper:hover),
+.sort-select :deep(.el-input__wrapper:hover) {
+  border-color: #4f46e5;
+}
+
+.category-select :deep(.el-input__wrapper.is-focus),
+.tag-select :deep(.el-input__wrapper.is-focus),
+.sort-select :deep(.el-input__wrapper.is-focus) {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-suggestions {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.search-suggestions h4 {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.suggestion-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion-tag {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.suggestion-tag:hover {
+  background: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+:deep(.search-dialog .el-dialog__footer) {
+  background: #f8fafc;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer .el-button {
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 500;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .header-content {
@@ -962,6 +1406,29 @@ onMounted(() => {
   .blog-meta {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  /* 搜索弹窗响应式 */
+  :deep(.search-dialog) {
+    width: 95% !important;
+    margin: 0 auto;
+  }
+
+  .filter-section {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .suggestion-tags {
+    justify-content: center;
+  }
+
+  .dialog-footer {
+    flex-direction: column;
+  }
+
+  .dialog-footer .el-button {
+    width: 100%;
   }
 }
 </style>

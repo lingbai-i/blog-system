@@ -77,6 +77,10 @@
         </el-form>
 
         <div class="login-footer">
+          <div class="footer-links">
+            <span>还没有账号？</span>
+            <el-link type="primary" @click="goToRegister">点击注册</el-link>
+          </div>
           <el-button type="text" @click="goHome">
             <el-icon><ArrowLeft /></el-icon>
             返回首页
@@ -214,6 +218,11 @@ const handleLogin = async () => {
 // 返回首页
 const goHome = () => {
   router.push('/')
+}
+
+// 跳转到注册页面
+const goToRegister = () => {
+  router.push('/register')
 }
 
 // 组件挂载时检查是否有记住的用户名
@@ -454,6 +463,15 @@ onMounted(() => {
   text-align: center;
   padding-top: 1.5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.footer-links {
+  margin-bottom: 1rem;
+  color: #666;
+}
+
+.footer-links span {
+  margin-right: 0.5rem;
 }
 
 .login-footer .el-button {

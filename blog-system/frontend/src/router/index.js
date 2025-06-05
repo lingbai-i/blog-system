@@ -5,6 +5,8 @@ import Admin from '../views/Admin.vue'
 import UserDashboard from '../views/UserDashboard.vue'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
+import Search from '../views/Search.vue'
+import Articles from '../views/Articles.vue'
 
 const routes = [
   {
@@ -39,6 +41,16 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: Register
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: Search
+  },
+  {
+    path: '/articles',
+    name: 'Articles',
+    component: Articles
   },
   {
     path: '/:pathMatch(.*)*',
