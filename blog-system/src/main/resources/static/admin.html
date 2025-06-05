@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博客管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.25);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .blog-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .blog-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .blog-info h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .blog-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .blog-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-published {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 5rem auto;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="loginSection" class="login-form">
+        <div class="card">
+            <h2 style="text-align: center; margin-bottom: 2rem; color: #667eea;">博客管理系统</h2>
+            
+            <div id="loginAlert"></div>
+            
+            <div class="tabs" style="margin-bottom: 1rem;">
+                <button class="tab active" onclick="switchAuthTab('login')">登录</button>
+                <button class="tab" onclick="switchAuthTab('register')">注册</button>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div id="loginTab" class="tab-content active">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">账号</label>
+                        <input type="text" id="loginUsername" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">密码</label>
+                        <input type="password" id="loginPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+                </form>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="registerTab" class="tab-content">
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerAccount">账号</label>
+                        <input type="text" id="registerAccount" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerUsername">用户名</label>
+                        <input type="text" id="registerUsername" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">邮箱</label>
+                        <input type="email" id="registerEmail" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">密码</label>
+                        <input type="password" id="registerPassword" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerConfirmPassword">确认密码</label>
+                        <input type="password" id="registerConfirmPassword" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="width: 100%;">注册</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="mainSection" class="hidden">
+        <div class="container">
+            <div class="header">
+                <div class="header-content">
+                    <div class="logo">📝 博客管理系统</div>
+                    <div class="user-info">
+                        <span id="currentUser">欢迎，用户</span>
+                        <button class="btn btn-secondary" onclick="logout()">退出登录</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalBlogs">0</div>
+                    <div class="stat-label">我的文章</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalComments">0</div>
+                    <div class="stat-label">评论总数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="publishedBlogs">0</div>
+                    <div class="stat-label">已发布</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="draftBlogs">0</div>
+                    <div class="stat-label">草稿</div>
+                </div>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('dashboard')">仪表盘</button>
+                <button class="tab" onclick="switchTab('blogs')">文章管理</button>
+                <button class="tab" onclick="switchTab('create')">写文章</button>
+                <button class="tab" onclick="switchTab('comments')">评论管理</button>
+            </div>
+
+            <!-- 仪表盘 -->
+            <div id="dashboardTab" class="tab-content active">
+                <div class="card">
+                    <h3>最近文章</h3>
+                    <div id="recentBlogs" class="loading">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 文章管理 -->
+            <div id="blogsTab" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>我的文章</h3>
+                        <button class="btn btn-primary" onclick="switchTab('create')">写新文章</button>
+                    </div>
+                    <div id="blogsList" class="loading">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 写文章 -->
+            <div id="createTab" class="tab-content">
+                <div class="card">
+                    <h3 id="createTitle">写新文章</h3>
+                    <div id="createAlert"></div>
+                    <form id="blogForm">
+                        <input type="hidden" id="blogId">
+                        <div class="form-group">
+                            <label for="blogTitle">标题</label>
+                            <input type="text" id="blogTitle" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="blogSummary">摘要</label>
+                            <input type="text" id="blogSummary" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="blogCategory">分类</label>
+                            <input type="text" id="blogCategory" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="blogTags">标签（用逗号分隔）</label>
+                            <input type="text" id="blogTags" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="blogContent">内容</label>
+                            <textarea id="blogContent" class="form-control" rows="10" required></textarea>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="submit" class="btn btn-primary">保存草稿</button>
+                            <button type="button" class="btn btn-success" onclick="publishBlog()">发布文章</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetForm()">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 评论管理 -->
+            <div id="commentsTab" class="tab-content">
+                <div class="card">
+                    <h3>评论管理</h3>
+                    <div id="commentsList" class="loading">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentBlogId = null;
+
+        // 页面加载时检查登录状态
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showMainSection();
+            }
+        });
+
+        // 切换认证标签页
+        function switchAuthTab(tab) {
+            document.querySelectorAll('#loginSection .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#loginSection .tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // 切换主界面标签页
+        function switchTab(tab) {
+            document.querySelectorAll('#mainSection .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#mainSection .tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // 加载对应内容
+            if (tab === 'dashboard') {
+                loadDashboard();
+            } else if (tab === 'blogs') {
+                loadBlogs();
+            } else if (tab === 'comments') {
+                loadComments();
+            }
+        }
+
+        // 显示提示信息
+        function showAlert(containerId, message, type = 'success') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+
+        // 登录表单提交
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const account = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ account: account, password })
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    currentUser = user;
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    showMainSection();
+                } else {
+                    const error = await response.text();
+                    showAlert('loginAlert', error || '登录失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('loginAlert', '网络错误，请稍后重试', 'danger');
+            }
+        });
+
+        // 注册表单提交
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const account = document.getElementById('registerAccount').value;
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                showAlert('loginAlert', '两次输入的密码不一致', 'danger');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ account, username, email, password })
+                });
+                
+                if (response.ok) {
+                    showAlert('loginAlert', '注册成功，请登录', 'success');
+                    switchAuthTab('login');
+                    document.getElementById('registerForm').reset();
+                } else {
+                    const error = await response.text();
+                    showAlert('loginAlert', error || '注册失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('loginAlert', '网络错误，请稍后重试', 'danger');
+            }
+        });
+
+        // 显示主界面
+        function showMainSection() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            document.getElementById('currentUser').textContent = `欢迎，${currentUser.username || currentUser.account || '用户'}`;
+            loadDashboard();
+        }
+
+        // 退出登录
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+        }
+
+        // 加载仪表盘
+        async function loadDashboard() {
+            try {
+                console.log('开始加载仪表盘数据...');
+                // 加载统计数据
+                const [blogsResponse, commentsResponse] = await Promise.all([
+                    fetch('/api/blogs'),
+                    fetch('/api/comments/stats')
+                ]);
+                
+                console.log('博客响应状态:', blogsResponse.status);
+                console.log('评论响应状态:', commentsResponse.status);
+                
+                if (blogsResponse.ok) {
+                    const blogsData = await blogsResponse.json();
+                    console.log('获取到的博客数据:', blogsData);
+                    const blogs = blogsData.content || blogsData;
+                    
+                    // 检查currentUser是否存在
+                    if (!currentUser) {
+                        console.error('用户未登录');
+                        return;
+                    }
+                    
+                    // 确保blogs是数组
+                    if (!Array.isArray(blogs)) {
+                        console.error('博客数据格式错误，期望数组但得到:', typeof blogs, blogs);
+                        return;
+                    }
+                    
+                    const userBlogs = blogs.filter(blog => blog.authorName === currentUser.username);
+                    const publishedBlogs = userBlogs.filter(blog => blog.isPublished);
+                    const draftBlogs = userBlogs.filter(blog => !blog.isPublished);
+                    
+                    console.log('用户博客数量:', userBlogs.length);
+                    console.log('已发布博客:', publishedBlogs.length);
+                    console.log('草稿博客:', draftBlogs.length);
+                    
+                    document.getElementById('totalBlogs').textContent = userBlogs.length;
+                    document.getElementById('publishedBlogs').textContent = publishedBlogs.length;
+                    document.getElementById('draftBlogs').textContent = draftBlogs.length;
+                    
+                    // 显示最近文章
+                    const recentBlogs = userBlogs.slice(0, 5);
+                    const recentBlogsHtml = recentBlogs.length > 0 ? 
+                        recentBlogs.map(blog => `
+                            <div class="blog-item">
+                                <div class="blog-info">
+                                    <h4>${blog.title}</h4>
+                                    <div class="blog-meta">
+                                        ${new Date(blog.createdAt).toLocaleDateString()} • 
+                                        <span class="status-badge ${blog.isPublished ? 'status-published' : 'status-draft'}">
+                                            ${blog.isPublished ? '已发布' : '草稿'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="blog-actions">
+                                    <button class="btn btn-primary" onclick="editBlog(${blog.id})">编辑</button>
+                                </div>
+                            </div>
+                        `).join('') : '<p>暂无文章</p>';
+                    
+                    document.getElementById('recentBlogs').innerHTML = recentBlogsHtml;
+                } else {
+                    console.error('获取博客数据失败:', blogsResponse.status, blogsResponse.statusText);
+                    document.getElementById('totalBlogs').textContent = '加载失败';
+                    document.getElementById('publishedBlogs').textContent = '加载失败';
+                    document.getElementById('draftBlogs').textContent = '加载失败';
+                }
+                
+                if (commentsResponse.ok) {
+                    const commentData = await commentsResponse.json();
+                    console.log('评论数据:', commentData);
+                    document.getElementById('totalComments').textContent = commentData.totalApprovedComments || 0;
+                } else {
+                    console.error('获取评论数据失败:', commentsResponse.status, commentsResponse.statusText);
+                    document.getElementById('totalComments').textContent = '加载失败';
+                }
+            } catch (error) {
+                console.error('加载仪表盘数据失败:', error);
+                document.getElementById('totalBlogs').textContent = '网络错误';
+                document.getElementById('publishedBlogs').textContent = '网络错误';
+                document.getElementById('draftBlogs').textContent = '网络错误';
+                document.getElementById('totalComments').textContent = '网络错误';
+            }
+        }
+
+        // 加载博客列表
+        async function loadBlogs() {
+            try {
+                console.log('开始加载博客列表...');
+                const response = await fetch('/api/blogs');
+                console.log('博客列表响应状态:', response.status);
+                if (response.ok) {
+                    const blogsData = await response.json();
+                    console.log('博客列表数据:', blogsData);
+                    const blogs = blogsData.content || blogsData;
+                    
+                    // 检查currentUser是否存在
+                    if (!currentUser) {
+                        console.error('用户未登录');
+                        return;
+                    }
+                    
+                    // 确保blogs是数组
+                    if (!Array.isArray(blogs)) {
+                        console.error('博客数据格式错误，期望数组但得到:', typeof blogs, blogs);
+                        return;
+                    }
+                    
+                    const userBlogs = blogs.filter(blog => blog.authorName === currentUser.username);
+                    console.log('用户博客列表:', userBlogs);
+                    
+                    const blogsHtml = userBlogs.length > 0 ? 
+                        userBlogs.map(blog => `
+                            <div class="blog-item">
+                                <div class="blog-info">
+                                    <h3>${blog.title}</h3>
+                                    <div class="blog-meta">
+                                        ${blog.summary || '无摘要'} • 
+                                        ${new Date(blog.createdAt).toLocaleDateString()} • 
+                                        浏览 ${blog.viewCount} • 点赞 ${blog.likeCount} • 
+                                        <span class="status-badge ${blog.isPublished ? 'status-published' : 'status-draft'}">
+                                            ${blog.isPublished ? '已发布' : '草稿'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="blog-actions">
+                                    <button class="btn btn-primary" onclick="editBlog(${blog.id})">编辑</button>
+                                    ${!blog.isPublished ? 
+                                        `<button class="btn btn-success" onclick="publishBlogById(${blog.id})">发布</button>` : 
+                                        `<button class="btn btn-secondary" onclick="unpublishBlog(${blog.id})">取消发布</button>`
+                                    }
+                                    <button class="btn btn-danger" onclick="deleteBlog(${blog.id})">删除</button>
+                                </div>
+                            </div>
+                        `).join('') : '<p>暂无文章</p>';
+                    
+                    document.getElementById('blogsList').innerHTML = blogsHtml;
+                }
+            } catch (error) {
+                console.error('加载文章失败:', error);
+                document.getElementById('blogsList').innerHTML = '<p>加载失败</p>';
+            }
+        }
+
+        // 加载评论列表
+        async function loadComments() {
+            try {
+                console.log('开始加载评论列表...');
+                const response = await fetch('/api/blogs');
+                console.log('评论加载-博客响应状态:', response.status);
+                if (response.ok) {
+                    const blogsData = await response.json();
+                     console.log('评论加载-博客数据:', blogsData);
+                    const blogs = blogsData.content || blogsData;
+                    
+                    // 检查currentUser是否存在
+                    if (!currentUser) {
+                        console.error('用户未登录');
+                        return;
+                    }
+                    
+                    // 确保blogs是数组
+                    if (!Array.isArray(blogs)) {
+                        console.error('博客数据格式错误，期望数组但得到:', typeof blogs, blogs);
+                        return;
+                    }
+                    
+                    const userBlogs = blogs.filter(blog => blog.authorName === currentUser.username);
+                    console.log('评论加载-用户博客:', userBlogs);
+                    
+                    let allComments = [];
+                    for (const blog of userBlogs) {
+                        const commentsResponse = await fetch(`/api/comments/blog/${blog.id}`);
+                        if (commentsResponse.ok) {
+                            const comments = await commentsResponse.json();
+                            allComments = allComments.concat(comments.map(comment => ({...comment, blogTitle: blog.title})));
+                        }
+                    }
+                    
+                    const commentsHtml = allComments.length > 0 ? 
+                        allComments.map(comment => `
+                            <div class="blog-item">
+                                <div class="blog-info">
+                                    <h4>${comment.authorName} 在《${comment.blogTitle}》中评论</h4>
+                                    <p>${comment.content}</p>
+                                    <div class="blog-meta">
+                                        ${new Date(comment.createdAt).toLocaleDateString()} • 
+                                        <span class="status-badge ${comment.approved ? 'status-published' : 'status-draft'}">
+                                            ${comment.approved ? '已审核' : '待审核'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="blog-actions">
+                                    ${!comment.approved ? 
+                                        `<button class="btn btn-success" onclick="approveComment(${comment.id})">审核通过</button>` : ''
+                                    }
+                                    <button class="btn btn-danger" onclick="deleteComment(${comment.id})">删除</button>
+                                </div>
+                            </div>
+                        `).join('') : '<p>暂无评论</p>';
+                    
+                    document.getElementById('commentsList').innerHTML = commentsHtml;
+                }
+            } catch (error) {
+                console.error('加载评论失败:', error);
+                document.getElementById('commentsList').innerHTML = '<p>加载失败</p>';
+            }
+        }
+
+        // 文章表单提交
+        document.getElementById('blogForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await saveBlog(false);
+        });
+
+        // 保存文章
+        async function saveBlog(publish = false) {
+            const blogData = {
+                title: document.getElementById('blogTitle').value,
+                summary: document.getElementById('blogSummary').value,
+                content: document.getElementById('blogContent').value,
+                category: document.getElementById('blogCategory').value,
+                tags: document.getElementById('blogTags').value,
+                authorName: currentUser.username,
+                published: publish
+            };
+            
+            try {
+                const blogId = document.getElementById('blogId').value;
+                const url = blogId ? `/api/blogs/${blogId}` : '/api/blogs';
+                const method = blogId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(blogData)
+                });
+                
+                if (response.ok) {
+                    const message = publish ? '文章发布成功' : '文章保存成功';
+                    showAlert('createAlert', message, 'success');
+                    resetForm();
+                    loadDashboard();
+                } else {
+                    const error = await response.text();
+                    showAlert('createAlert', error || '保存失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('createAlert', '网络错误，请稍后重试', 'danger');
+            }
+        }
+
+        // 发布文章
+        async function publishBlog() {
+            await saveBlog(true);
+        }
+
+        // 通过ID发布文章
+        async function publishBlogById(id) {
+            try {
+                const response = await fetch(`/api/blogs/${id}/publish`, {
+                    method: 'PUT'
+                });
+                
+                if (response.ok) {
+                    loadBlogs();
+                    loadDashboard();
+                } else {
+                    alert('发布失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // 取消发布文章
+        async function unpublishBlog(id) {
+            try {
+                const response = await fetch(`/api/blogs/${id}/unpublish`, {
+                    method: 'PUT'
+                });
+                
+                if (response.ok) {
+                    loadBlogs();
+                    loadDashboard();
+                } else {
+                    alert('操作失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // 编辑文章
+        async function editBlog(id) {
+            try {
+                const response = await fetch(`/api/blogs/${id}`);
+                if (response.ok) {
+                    const blog = await response.json();
+                    
+                    document.getElementById('blogId').value = blog.id;
+                    document.getElementById('blogTitle').value = blog.title;
+                    document.getElementById('blogSummary').value = blog.summary || '';
+                    document.getElementById('blogContent').value = blog.content;
+                    document.getElementById('blogCategory').value = blog.category || '';
+                    document.getElementById('blogTags').value = blog.tags || '';
+                    
+                    document.getElementById('createTitle').textContent = '编辑文章';
+                    switchTab('create');
+                }
+            } catch (error) {
+                alert('加载文章失败');
+            }
+        }
+
+        // 删除文章
+        async function deleteBlog(id) {
+            if (confirm('确定要删除这篇文章吗？')) {
+                try {
+                    const response = await fetch(`/api/blogs/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        loadBlogs();
+                        loadDashboard();
+                    } else {
+                        alert('删除失败');
+                    }
+                } catch (error) {
+                    alert('网络错误');
+                }
+            }
+        }
+
+        // 审核评论
+        async function approveComment(id) {
+            try {
+                const response = await fetch(`/api/comments/${id}/approve`, {
+                    method: 'PUT'
+                });
+                
+                if (response.ok) {
+                    loadComments();
+                } else {
+                    alert('审核失败');
+                }
+            } catch (error) {
+                alert('网络错误');
+            }
+        }
+
+        // 删除评论
+        async function deleteComment(id) {
+            if (confirm('确定要删除这条评论吗？')) {
+                try {
+                    const response = await fetch(`/api/comments/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        loadComments();
+                    } else {
+                        alert('删除失败');
+                    }
+                } catch (error) {
+                    alert('网络错误');
+                }
+            }
+        }
+
+        // 重置表单
+        function resetForm() {
+            document.getElementById('blogForm').reset();
+            document.getElementById('blogId').value = '';
+            document.getElementById('createTitle').textContent = '写新文章';
+        }
+    </script>
+</body>
+</html>
