@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @CrossOrigin(originPatterns = { "http://localhost:*", "http://127.0.0.1:*" }, allowCredentials = "true")
 public class UserController {
@@ -28,6 +28,17 @@ public class UserController {
             String email = request.get("email");
             String password = request.get("password");
             String fullName = request.get("fullName"); // 可选字段
+
+            // 如果没有提供account，使用username作为account
+            if (account == null || account.trim().isEmpty()) {
+                account = username;
+            }
+
+            // email字段为可选，如果为空则设置为null
+            if (email != null && email.trim().isEmpty()) {
+                email = null;
+            }
+
             if (fullName == null || fullName.trim().isEmpty()) {
                 fullName = username; // 如果没有提供fullName，使用username作为默认值
             }
@@ -59,9 +70,17 @@ public class UserController {
 
         Map<String, Object> response = new HashMap<>();
         if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // 生成简单的token（实际项目中应使用JWT）
+            String token = "token_" + user.getId() + "_" + System.currentTimeMillis();
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+            data.put("user", user);
+
             response.put("success", true);
             response.put("message", "登录成功");
-            response.put("user", userOpt.get());
+            response.put("data", data);
             return ResponseEntity.ok(response);
         } else {
             response.put("success", false);
@@ -171,5 +190,66 @@ public class UserController {
         Optional<User> user = userService.findByUsername(username);
         return user.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // 获取当前用户资料（模拟接口，实际应该从token中获取用户信息）
+    @GetMapping("/profile")
+    public ResponseEntity<Object> getCurrentUserProfile() {
+        // 这里应该从JWT token或session中获取当前用户信息
+        // 为了演示，我们返回一个模拟的用户信息
+        Map<String, Object> profile = new HashMap<>();
+        profile.put("username", "testuser");
+        profile.put("email", "");
+        profile.put("role", "user");
+        profile.put("createdAt", "2024-01-01T00:00:00");
+
+        return ResponseEntity.ok(profile);
+    }
+
+    // 更新当前用户资料
+    @PutMapping("/profile")
+    public ResponseEntity<Object> updateCurrentUserProfile(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+
+            // 这里应该从JWT token或session中获取当前用户ID
+            // 为了演示，我们假设用户ID为1
+            Long currentUserId = 1L;
+
+            // 验证邮箱格式
+            if (email != null && !email.trim().isEmpty()) {
+                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "邮箱格式不正确");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // 更新用户邮箱
+            Optional<User> userOpt = userService.findById(currentUserId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setEmail(email != null && !email.trim().isEmpty() ? email : null);
+                userService.updateUser(user);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", true);
+                response.put("message", "个人资料更新成功");
+                response.put("user", user);
+
+                return ResponseEntity.ok(response);
+            } else {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "用户不存在");
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "更新失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

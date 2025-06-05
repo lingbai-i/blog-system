@@ -93,7 +93,8 @@ public class UserService {
         if (existsByUsername(username)) {
             throw new RuntimeException("用户名已存在");
         }
-        if (existsByEmail(email)) {
+        // 只有当email不为null时才检查邮箱是否已存在
+        if (email != null && existsByEmail(email)) {
             throw new RuntimeException("邮箱已存在");
         }
 

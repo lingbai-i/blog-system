@@ -29,7 +29,7 @@ public class User {
     @Column(nullable = false, length = 100)
     private String password;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(name = "email", nullable = true, unique = true, length = 100)
     private String email;
 
     @Column(name = "full_name", length = 100)
@@ -38,11 +38,14 @@ public class User {
     @Column(length = 500)
     private String bio;
 
-    @Column(length = 200)
+    @Column(name = "avatar_url", length = 200)
     private String avatar;
 
     @Column(name = "is_admin")
     private Boolean isAdmin = false;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 
     @CreationTimestamp
     @Column(name = "created_at")
