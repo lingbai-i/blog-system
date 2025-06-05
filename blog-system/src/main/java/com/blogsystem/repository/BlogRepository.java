@@ -25,6 +25,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     // 根据作者查找博客
     Page<Blog> findByAuthorNameAndIsPublishedTrueOrderByCreatedAtDesc(String authorName, Pageable pageable);
 
+    // 根据作者名称查找博客（包括未发布的）
+    List<Blog> findByAuthorNameOrderByCreatedAtDesc(String authorName);
+
     // 查找热门博客（按浏览量排序）
     @Query("SELECT b FROM Blog b WHERE b.isPublished = true ORDER BY b.viewCount DESC")
     List<Blog> findPopularBlogs(Pageable pageable);

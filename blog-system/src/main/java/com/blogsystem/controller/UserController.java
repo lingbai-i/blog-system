@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -192,17 +193,40 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // 获取当前用户资料（模拟接口，实际应该从token中获取用户信息）
+    // 获取当前用户资料
     @GetMapping("/profile")
-    public ResponseEntity<Object> getCurrentUserProfile() {
-        // 这里应该从JWT token或session中获取当前用户信息
-        // 为了演示，我们返回一个模拟的用户信息
+    public ResponseEntity<Object> getCurrentUserProfile(HttpServletRequest request) {
+        // 从Authorization头中获取token
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            // 解析token获取用户ID（token格式：token_userId_timestamp）
+            try {
+                String[] parts = token.split("_");
+                if (parts.length >= 2) {
+                    Long userId = Long.parseLong(parts[1]);
+                    Optional<User> userOpt = userService.findById(userId);
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        Map<String, Object> profile = new HashMap<>();
+                        profile.put("username", user.getUsername());
+                        profile.put("email", user.getEmail() != null ? user.getEmail() : "");
+                        profile.put("role", user.getIsAdmin() ? "admin" : "user");
+                        profile.put("createdAt", user.getCreatedAt());
+                        return ResponseEntity.ok(profile);
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // token格式错误
+            }
+        }
+
+        // 如果token无效或解析失败，返回默认信息
         Map<String, Object> profile = new HashMap<>();
         profile.put("username", "testuser");
         profile.put("email", "");
         profile.put("role", "user");
         profile.put("createdAt", "2024-01-01T00:00:00");
-
         return ResponseEntity.ok(profile);
     }
 

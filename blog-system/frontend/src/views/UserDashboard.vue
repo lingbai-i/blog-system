@@ -30,7 +30,7 @@
               </el-menu-item>
               <el-menu-item index="my-blogs">
                 <el-icon><Document /></el-icon>
-                <span>我的文章</span>
+                <span>我的发布</span>
               </el-menu-item>
               <el-menu-item index="create-blog">
                 <el-icon><EditPen /></el-icon>
@@ -48,7 +48,7 @@
             <!-- 我的文章 -->
             <div v-if="activeMenu === 'my-blogs'" class="content-section">
               <div class="section-header">
-                <h2>我的文章</h2>
+                <h2>我的发布</h2>
                 <el-button type="primary" @click="activeMenu = 'create-blog'">
                   <el-icon><Plus /></el-icon>
                   写新文章
@@ -60,7 +60,7 @@
               </div>
               
               <div v-else-if="myBlogs.length === 0" class="empty">
-                <el-empty description="还没有文章，快去写一篇吧！" />
+                <el-empty description="还没有发布，快去写一篇吧！" />
               </div>
               
               <div v-else class="blog-list">
@@ -274,18 +274,40 @@ const handleMenuSelect = (index) => {
 // 获取用户信息
 const fetchUserInfo = async () => {
   try {
-    const response = await axios.get('/api/auth/profile')
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    console.log('Token found:', !!token)
+    
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
+    const response = await axios.get('/api/auth/profile', config)
     Object.assign(userInfo, response.data)
+    console.log('User info from API:', response.data)
     // 初始化个人资料表单
     profileForm.email = response.data.email || ''
   } catch (error) {
-    // 使用模拟数据
-    Object.assign(userInfo, {
-      username: localStorage.getItem('username') || '用户',
-      email: '',
-      role: localStorage.getItem('userRole') || 'user',
-      createdAt: '2024-01-01T00:00:00'
-    })
+    console.warn('获取用户信息失败:', error)
+    // 从localStorage获取基本信息
+    const username = localStorage.getItem('username')
+    const userRole = localStorage.getItem('userRole')
+    console.log('Username from localStorage:', username)
+    console.log('UserRole from localStorage:', userRole)
+    
+    if (username) {
+      const userData = {
+        username: username,
+        email: '',
+        role: userRole || 'user',
+        createdAt: ''
+      }
+      Object.assign(userInfo, userData)
+      console.log('User info set from localStorage:', userData)
+    } else {
+      console.error('No username found in localStorage')
+    }
     // 初始化个人资料表单
     profileForm.email = ''
   }
@@ -295,23 +317,18 @@ const fetchUserInfo = async () => {
 const fetchMyBlogs = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/blogs/my')
-    myBlogs.value = response.data.content || response.data
-  } catch (error) {
-    // 使用模拟数据
-    myBlogs.value = [
-      {
-        id: 1,
-        title: '我的第一篇文章',
-        summary: '这是我的第一篇博客文章',
-        content: '文章内容...',
-        category: '生活',
-        tags: '日记,生活',
-        createdAt: '2024-01-15T10:00:00',
-        viewCount: 25,
-        isPublished: true
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-    ]
+    } : {}
+    
+    const response = await axios.get('/api/blogs/my', config)
+    myBlogs.value = response.data.content || response.data || []
+  } catch (error) {
+    console.warn('获取文章列表失败:', error)
+    myBlogs.value = []
   } finally {
     loading.value = false
   }
@@ -338,16 +355,23 @@ const saveBlog = async (publish = false) => {
     await blogFormRef.value.validate()
     saving.value = true
     
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
     const blogData = {
       ...blogForm,
       isPublished: publish
     }
     
     if (editingBlog.value) {
-      await axios.put(`/api/blogs/${editingBlog.value.id}`, blogData)
+      await axios.put(`/api/blogs/${editingBlog.value.id}`, blogData, config)
       ElMessage.success('文章更新成功')
     } else {
-      await axios.post('/api/blogs', blogData)
+      await axios.post('/api/blogs', blogData, config)
       ElMessage.success(publish ? '文章发布成功' : '草稿保存成功')
     }
     
@@ -364,8 +388,15 @@ const saveBlog = async (publish = false) => {
 // 切换发布状态
 const togglePublish = async (blog) => {
   try {
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
     const action = blog.isPublished ? 'unpublish' : 'publish'
-    await axios.put(`/api/blogs/${blog.id}/${action}`)
+    await axios.put(`/api/blogs/${blog.id}/${action}`, {}, config)
     blog.isPublished = !blog.isPublished
     ElMessage.success(blog.isPublished ? '文章已发布' : '文章已取消发布')
   } catch (error) {
@@ -380,7 +411,14 @@ const deleteBlog = async (blog) => {
       type: 'warning'
     })
     
-    await axios.delete(`/api/blogs/${blog.id}`)
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
+    await axios.delete(`/api/blogs/${blog.id}`, config)
     ElMessage.success('文章删除成功')
     fetchMyBlogs()
   } catch (error) {
@@ -414,9 +452,16 @@ const updateProfile = async () => {
     await profileFormRef.value.validate()
     updatingProfile.value = true
     
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
     const response = await axios.put('/api/auth/profile', {
       email: profileForm.email
-    })
+    }, config)
     
     // 更新用户信息
     userInfo.email = profileForm.email

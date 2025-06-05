@@ -1,8 +1,22 @@
 <template>
-  <div class="register">
+  <div class="register-page">
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
+      <div class="circle circle-4"></div>
+    </div>
+    
     <div class="register-container">
       <div class="register-card">
-        <h2 class="register-title">用户注册</h2>
+        <div class="register-header">
+          <div class="logo-icon">
+            <i class="el-icon-user-solid" style="font-size: 2rem;"></i>
+          </div>
+          <h1 class="register-title">欢迎加入</h1>
+          <p class="register-subtitle">创建您的专属账户，开启精彩旅程</p>
+        </div>
         <el-form
           ref="registerFormRef"
           :model="registerForm"
@@ -182,61 +196,358 @@ const goToLogin = () => {
 </script>
 
 <style scoped>
-.register {
+.register-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景装饰 */
+.bg-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 8s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 180px;
+  height: 180px;
+  top: 15%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 120px;
+  height: 120px;
+  top: 70%;
+  right: 20%;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 80px;
+  height: 80px;
+  bottom: 30%;
+  left: 25%;
+  animation-delay: 4s;
+}
+
+.circle-4 {
+  width: 140px;
+  height: 140px;
+  top: 40%;
+  right: 10%;
+  animation-delay: 6s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-30px) rotate(180deg);
+    opacity: 0.2;
+  }
 }
 
 .register-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
+  position: relative;
+  z-index: 2;
 }
 
 .register-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  animation: slideIn 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.register-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.logo-icon {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+    transform: scale(1);
+  }
 }
 
 .register-title {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #333;
-  font-size: 1.8rem;
-  font-weight: 600;
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.8rem 0;
+}
+
+.register-subtitle {
+  color: #666;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .register-form {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .register-button {
   width: 100%;
-  height: 45px;
-  font-size: 1rem;
+  height: 52px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 14px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.register-button:active {
+  transform: translateY(-1px);
+}
+
+.register-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.register-button:hover::before {
+  left: 100%;
 }
 
 .register-footer {
   text-align: center;
-  color: #666;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .register-footer .el-link {
+  color: #667eea;
+  transition: all 0.3s ease;
+  font-weight: 500;
   margin-left: 0.5rem;
 }
 
+.register-footer .el-link:hover {
+  color: #764ba2;
+  transform: translateX(-8px);
+}
+
+/* 输入框样式美化 */
+:deep(.el-form-item) {
+  margin-bottom: 1.8rem;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 14px;
+  border: 2px solid #e8ecf0;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+  box-shadow: none;
+  height: 48px;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: #667eea;
+  background: white;
+  transform: translateY(-1px);
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+:deep(.el-input__inner) {
+  font-size: 1rem;
+  padding: 14px 18px;
+  color: #333;
+  font-weight: 500;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: #999;
+  font-weight: 400;
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  color: #555;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* 错误状态样式 */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+  border-color: #f56565;
+  background: #fef5f5;
+}
+
+:deep(.el-form-item__error) {
+  color: #f56565;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .register {
-    padding: 1rem;
+  .register-page {
+    padding: 0.5rem;
   }
   
   .register-card {
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
+    border-radius: 20px;
   }
+  
+  .register-title {
+    font-size: 1.8rem;
+  }
+  
+  .register-subtitle {
+    font-size: 1rem;
+  }
+  
+  .logo-icon {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .circle-1, .circle-2, .circle-3, .circle-4 {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .register-title {
+    font-size: 1.6rem;
+  }
+  
+  .register-button {
+    height: 48px;
+    font-size: 1rem;
+  }
+  
+  :deep(.el-input__wrapper) {
+    height: 44px;
+  }
+  
+  :deep(.el-input__inner) {
+    padding: 12px 16px;
+  }
+}
+
+/* 动画效果 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 加载状态 */
+:deep(.el-button.is-loading) {
+  pointer-events: none;
+}
+
+:deep(.el-loading-spinner) {
+  color: white;
+}
+
+/* 表单验证成功状态 */
+:deep(.el-form-item.is-success .el-input__wrapper) {
+  border-color: #48bb78;
+  background: #f0fff4;
+}
+
+/* 聚焦时的微动画 */
+:deep(.el-input__wrapper) {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 按钮禁用状态 */
+:deep(.el-button:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
 }
 </style>

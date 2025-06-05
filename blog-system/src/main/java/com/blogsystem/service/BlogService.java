@@ -1,6 +1,7 @@
 package com.blogsystem.service;
 
 import com.blogsystem.entity.Blog;
+import com.blogsystem.entity.User;
 import com.blogsystem.repository.BlogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class BlogService {
 
     private final BlogRepository blogRepository;
+    private final UserService userService;
 
     // 创建博客
     public Blog createBlog(Blog blog) {
@@ -122,6 +125,17 @@ public class BlogService {
             return blogRepository.save(blog);
         }
         return null;
+    }
+
+    // 根据用户ID获取博客
+    public List<Blog> findBlogsByUserId(Long userId) {
+        // 根据userId获取用户名
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isPresent()) {
+            String authorName = userOpt.get().getUsername();
+            return blogRepository.findByAuthorNameOrderByCreatedAtDesc(authorName);
+        }
+        return new ArrayList<>();
     }
 
     // 获取博客总数

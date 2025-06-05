@@ -1,10 +1,20 @@
 <template>
   <div class="login-page">
+    <!-- 背景装饰 -->
+    <div class="bg-decoration">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
+      <div class="circle circle-3"></div>
+    </div>
+    
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
-          <h1 class="login-title">用户登录</h1>
-          <p class="login-subtitle">请选择登录类型并输入账号密码</p>
+          <div class="logo-icon">
+            <el-icon size="48"><User /></el-icon>
+          </div>
+          <h1 class="login-title">欢迎回来</h1>
+          <p class="login-subtitle">请选择登录类型并输入您的账号密码</p>
         </div>
 
         <!-- 登录类型选择 -->
@@ -235,46 +245,143 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 背景装饰 */
+.bg-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 150px;
+  height: 150px;
+  top: 60%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+.circle-3 {
+  width: 100px;
+  height: 100px;
+  bottom: 20%;
+  left: 20%;
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 0.3;
+  }
 }
 
 .login-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  position: relative;
+  z-index: 2;
 }
 
 .login-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
+  }
+  100% {
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  }
 }
 
 .login-title {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #333;
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0 0 0.5rem 0;
 }
 
 .login-subtitle {
   color: #666;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .login-type {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   text-align: center;
 }
 
 .login-type-group {
   width: 100%;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 4px;
 }
 
 .login-type-group .el-radio-button {
@@ -283,75 +390,193 @@ onMounted(() => {
 
 .login-type-group .el-radio-button__inner {
   width: 100%;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.login-type-group .el-radio-button__original-radio:checked + .el-radio-button__inner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
 .login-form {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .login-options {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   width: 100%;
 }
 
 .login-button {
   width: 100%;
-  height: 44px;
-  font-size: 1rem;
+  height: 48px;
+  font-size: 1.1rem;
   font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.login-button:hover::before {
+  left: 100%;
 }
 
 .login-footer {
   text-align: center;
-  padding-top: 1rem;
-  border-top: 1px solid #e0e0e0;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.login-footer .el-button {
+  color: #667eea;
+  transition: all 0.3s ease;
+}
+
+.login-footer .el-button:hover {
+  color: #764ba2;
+  transform: translateX(-5px);
+}
+
+/* 输入框样式美化 */
+:deep(.el-form-item) {
+  margin-bottom: 1.5rem;
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: 12px;
+  border: 2px solid #e8ecf0;
+  transition: all 0.3s ease;
+  background: #f8f9fa;
+  box-shadow: none;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: #667eea;
+  background: white;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+:deep(.el-input__inner) {
+  font-size: 1rem;
+  padding: 12px 16px;
+  color: #333;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: #999;
+  font-weight: 400;
+}
+
+:deep(.el-checkbox) {
+  color: #666;
+  font-weight: 500;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+:deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+  color: #667eea;
 }
 
 /* 响应式设计 */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+  .login-page {
+    padding: 0.5rem;
+  }
+  
   .login-card {
-    padding: 1.5rem;
-    margin: 0 1rem;
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
   }
   
   .login-title {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
+  }
+  
+  .logo-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .circle-1, .circle-2, .circle-3 {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .login-title {
+    font-size: 1.4rem;
+  }
+  
+  .login-button {
+    height: 44px;
+    font-size: 1rem;
   }
 }
 
 /* 动画效果 */
 .login-card {
-  animation: slideUp 0.5s ease-out;
+  animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes slideUp {
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Element Plus 组件样式覆盖 */
-:deep(.el-input__wrapper) {
-  border-radius: 8px;
+/* 加载状态 */
+:deep(.el-button.is-loading) {
+  pointer-events: none;
 }
 
-:deep(.el-button) {
-  border-radius: 8px;
-}
-
-:deep(.el-form-item) {
-  margin-bottom: 1.5rem;
-}
-
-:deep(.el-form-item:last-child) {
-  margin-bottom: 0;
+:deep(.el-loading-spinner) {
+  color: white;
 }
 </style>

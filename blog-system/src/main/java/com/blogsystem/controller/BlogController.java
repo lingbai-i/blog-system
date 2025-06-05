@@ -1,12 +1,17 @@
 package com.blogsystem.controller;
 
 import com.blogsystem.entity.Blog;
+import com.blogsystem.entity.User;
 import com.blogsystem.service.BlogService;
+import com.blogsystem.service.UserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +22,7 @@ import java.util.Optional;
 public class BlogController {
 
     private final BlogService blogService;
+    private final UserService userService;
 
     // 获取所有已发布的博客（分页）
     @GetMapping
@@ -37,19 +43,63 @@ public class BlogController {
 
     // 创建新博客
     @PostMapping
-    public ResponseEntity<Blog> createBlog(@RequestBody Blog blog) {
-        Blog savedBlog = blogService.createBlog(blog);
-        return ResponseEntity.ok(savedBlog);
+    public ResponseEntity<Blog> createBlog(@RequestBody Blog blog, HttpServletRequest request) {
+        try {
+            // 从token中获取用户信息
+            String token = request.getHeader("Authorization");
+            if (token != null && token.startsWith("Bearer ")) {
+                token = token.substring(7);
+                // 解析token获取用户ID（token格式：token_userId_timestamp）
+                try {
+                    String[] parts = token.split("_");
+                    if (parts.length >= 2) {
+                        Long userId = Long.parseLong(parts[1]);
+                        Optional<User> userOpt = userService.findById(userId);
+                        if (userOpt.isPresent()) {
+                            blog.setAuthorName(userOpt.get().getUsername());
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // token格式错误，忽略
+                }
+            }
+            Blog savedBlog = blogService.createBlog(blog);
+            return ResponseEntity.ok(savedBlog);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     // 更新博客
     @PutMapping("/{id}")
-    public ResponseEntity<Blog> updateBlog(@PathVariable Long id, @RequestBody Blog blog) {
+    public ResponseEntity<Blog> updateBlog(@PathVariable Long id, @RequestBody Blog blog, HttpServletRequest request) {
         Optional<Blog> existingBlog = blogService.findById(id);
         if (existingBlog.isPresent()) {
-            blog.setId(id);
-            Blog updatedBlog = blogService.updateBlog(blog);
-            return ResponseEntity.ok(updatedBlog);
+            try {
+                // 从token中获取用户信息
+                String token = request.getHeader("Authorization");
+                if (token != null && token.startsWith("Bearer ")) {
+                    token = token.substring(7);
+                    // 解析token获取用户ID（token格式：token_userId_timestamp）
+                    try {
+                        String[] parts = token.split("_");
+                        if (parts.length >= 2) {
+                            Long userId = Long.parseLong(parts[1]);
+                            Optional<User> userOpt = userService.findById(userId);
+                            if (userOpt.isPresent()) {
+                                blog.setAuthorName(userOpt.get().getUsername());
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        // token格式错误，忽略
+                    }
+                }
+                blog.setId(id);
+                Blog updatedBlog = blogService.updateBlog(blog);
+                return ResponseEntity.ok(updatedBlog);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().build();
+            }
         }
         return ResponseEntity.notFound().build();
     }
@@ -146,6 +196,30 @@ public class BlogController {
             return ResponseEntity.ok(blog);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    // 获取当前用户的博客
+    @GetMapping("/my")
+    public ResponseEntity<List<Blog>> getMyBlogs(HttpServletRequest request) {
+        // 从Authorization头中获取token
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            // 解析token获取用户ID（token格式：token_userId_timestamp）
+            try {
+                String[] parts = token.split("_");
+                if (parts.length >= 2) {
+                    Long currentUserId = Long.parseLong(parts[1]);
+                    List<Blog> userBlogs = blogService.findBlogsByUserId(currentUserId);
+                    return ResponseEntity.ok(userBlogs);
+                }
+            } catch (NumberFormatException e) {
+                // token格式错误，返回空列表
+            }
+        }
+
+        // 如果没有有效token，返回空列表
+        return ResponseEntity.ok(new ArrayList<>());
     }
 
     // 获取博客统计信息

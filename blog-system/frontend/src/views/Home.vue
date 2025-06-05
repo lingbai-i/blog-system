@@ -1,42 +1,82 @@
 <template>
   <div class="home">
-    <!-- 头部导航 -->
+    <!-- 顶部导航 -->
     <header class="header">
-      <div class="container">
-        <div class="header-content">
-          <h1 class="logo">个人博客</h1>
-          <nav class="nav">
-            <router-link to="/" class="nav-link">首页</router-link>
-            <div class="auth-buttons" v-if="!isLoggedIn">
-              <el-button type="primary" plain @click="goToLogin">登录</el-button>
-              <el-button type="primary" @click="goToRegister">注册</el-button>
-            </div>
-            <div class="user-nav" v-else>
-              <span class="welcome-text">欢迎，{{ username }}</span>
-              <el-button type="primary" plain @click="goToUserCenter">个人中心</el-button>
-              <el-button type="danger" plain @click="handleLogout">注销</el-button>
-            </div>
-          </nav>
+      <div class="header-content">
+        <div class="logo">
+          <h1>📝 个人博客系统</h1>
         </div>
+        <nav class="nav">
+          <div class="nav-links">
+            <a href="#home" class="nav-link">首页</a>
+            <a href="#blogs" class="nav-link">文章</a>
+            <a href="#features" class="nav-link">功能</a>
+            <a href="#api" class="nav-link">API</a>
+          </div>
+          <div class="auth-buttons">
+            <template v-if="isLoggedIn">
+              <span class="username">{{ username }}</span>
+              <el-button v-if="userRole === 'admin'" @click="goToAdmin" size="small">管理后台</el-button>
+              <el-button v-else @click="goToUserCenter" size="small">个人中心</el-button>
+              <el-button @click="handleLogout" size="small">退出</el-button>
+            </template>
+            <template v-else>
+              <el-button @click="goToLogin" size="small">登录</el-button>
+              <el-button @click="goToRegister" type="primary" size="small">注册</el-button>
+            </template>
+          </div>
+        </nav>
       </div>
     </header>
 
     <!-- 主要内容 -->
     <main class="main">
       <div class="container">
+        <!-- 系统介绍 -->
+        <section id="home" class="hero">
+          <h1>欢迎来到个人博客系统</h1>
+          <p>一个功能完整的Spring Boot博客系统，支持文章管理、用户系统、评论功能等</p>
+          <div class="hero-buttons">
+            <el-button type="primary" @click="loadStats" :loading="statsLoading">查看系统统计</el-button>
+            <el-button v-if="isLoggedIn" @click="goToAdmin">进入管理系统</el-button>
+          </div>
+        </section>
+
+        <!-- 系统统计 -->
+        <section v-if="showStats" class="stats-section">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">{{ systemStats.totalBlogs }}</div>
+              <div class="stat-label">已发布文章</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ systemStats.totalComments }}</div>
+              <div class="stat-label">评论总数</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ systemStats.totalUsers }}</div>
+              <div class="stat-label">注册用户</div>
+            </div>
+          </div>
+        </section>
+
         <!-- 搜索栏 -->
-        <div class="search-section">
-          <el-input
-            v-model="searchKeyword"
-            placeholder="搜索博客文章..."
-            class="search-input"
-            @keyup.enter="searchBlogs"
-          >
-            <template #append>
-              <el-button @click="searchBlogs" :icon="Search">搜索</el-button>
-            </template>
-          </el-input>
-        </div>
+        <section id="blogs" class="search-section">
+          <h2>文章列表</h2>
+          <div class="search-bar">
+            <el-input
+              v-model="searchKeyword"
+              placeholder="搜索文章..."
+              class="search-input"
+              @keyup.enter="searchBlogs"
+              clearable
+            >
+              <template #append>
+                <el-button @click="searchBlogs" :icon="Search">搜索</el-button>
+              </template>
+            </el-input>
+          </div>
+        </section>
 
         <!-- 博客列表 -->
         <div class="blog-section">
@@ -94,8 +134,114 @@
             />
           </div>
         </div>
+
+        <!-- 功能特色 -->
+        <section id="features" class="features">
+          <h2>功能特色</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">📚</div>
+              <h3>文章管理</h3>
+              <p>支持文章的创建、编辑、发布、分类和标签管理，提供丰富的内容管理功能</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">👥</div>
+              <h3>用户系统</h3>
+              <p>完整的用户注册、登录、权限管理系统，支持管理员和普通用户角色</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">💬</div>
+              <h3>评论功能</h3>
+              <p>支持文章评论、回复评论、评论审核等功能，促进用户互动</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🔍</div>
+              <h3>搜索功能</h3>
+              <p>支持按标题、分类、标签搜索文章，快速找到感兴趣的内容</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">📊</div>
+              <h3>统计分析</h3>
+              <p>提供文章浏览量、点赞数、评论数等统计功能，了解内容表现</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">🎨</div>
+              <h3>响应式设计</h3>
+              <p>现代化的响应式界面设计，支持PC和移动设备访问</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- API文档 -->
+        <section id="api" class="api-section">
+          <h2>API 接口文档</h2>
+          <p>以下是系统提供的主要API接口：</p>
+          
+          <div class="api-group">
+            <h3>博客相关接口</h3>
+            <div class="api-endpoint">
+              <span class="method get">GET</span>
+              <strong>/api/blogs</strong> - 获取所有已发布的博客（分页）
+            </div>
+            <div class="api-endpoint">
+              <span class="method get">GET</span>
+              <strong>/api/blogs/{id}</strong> - 获取指定博客详情
+            </div>
+            <div class="api-endpoint">
+              <span class="method post">POST</span>
+              <strong>/api/blogs</strong> - 创建新博客
+            </div>
+            <div class="api-endpoint">
+              <span class="method put">PUT</span>
+              <strong>/api/blogs/{id}</strong> - 更新博客
+            </div>
+            <div class="api-endpoint">
+              <span class="method delete">DELETE</span>
+              <strong>/api/blogs/{id}</strong> - 删除博客
+            </div>
+          </div>
+
+          <div class="api-group">
+            <h3>用户相关接口</h3>
+            <div class="api-endpoint">
+              <span class="method post">POST</span>
+              <strong>/api/users/register</strong> - 用户注册
+            </div>
+            <div class="api-endpoint">
+              <span class="method post">POST</span>
+              <strong>/api/users/login</strong> - 用户登录
+            </div>
+            <div class="api-endpoint">
+              <span class="method get">GET</span>
+              <strong>/api/users/{id}</strong> - 获取用户信息
+            </div>
+          </div>
+
+          <div class="api-group">
+            <h3>评论相关接口</h3>
+            <div class="api-endpoint">
+              <span class="method post">POST</span>
+              <strong>/api/comments</strong> - 创建评论
+            </div>
+            <div class="api-endpoint">
+              <span class="method get">GET</span>
+              <strong>/api/comments/blog/{blogId}</strong> - 获取博客的所有评论
+            </div>
+            <div class="api-endpoint">
+              <span class="method put">PUT</span>
+              <strong>/api/comments/{id}/approve</strong> - 审核通过评论
+            </div>
+          </div>
+        </section>
       </div>
     </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <div class="container">
+        <p>&copy; 2025 个人博客系统. 基于 Spring Boot 开发.</p>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -116,6 +262,14 @@ const pageSize = ref(10)
 const total = ref(0)
 const isLoggedIn = ref(false)
 const username = ref('')
+const userRole = ref('')
+const showStats = ref(false)
+const statsLoading = ref(false)
+const systemStats = ref({
+  totalBlogs: 0,
+  totalComments: 0,
+  totalUsers: 0
+})
 
 // 获取博客列表
 const fetchBlogs = async () => {
@@ -214,18 +368,78 @@ const goToRegister = () => {
   router.push('/register')
 }
 
+// 跳转到管理后台
+const goToAdmin = () => {
+  router.push('/admin')
+}
+
+// 加载系统统计
+const loadStats = async () => {
+  statsLoading.value = true
+  try {
+    // 获取博客统计
+    try {
+      const blogResponse = await axios.get('/api/blogs/stats')
+      if (blogResponse.data) {
+        systemStats.value.totalBlogs = blogResponse.data.totalPublishedBlogs || 0
+      }
+    } catch (error) {
+      console.warn('获取博客统计失败:', error)
+      systemStats.value.totalBlogs = blogs.value.length || 0
+    }
+
+    // 获取评论统计
+    try {
+      const commentResponse = await axios.get('/api/comments/stats')
+      if (commentResponse.data) {
+        systemStats.value.totalComments = commentResponse.data.totalApprovedComments || 0
+      }
+    } catch (error) {
+      console.warn('获取评论统计失败:', error)
+      systemStats.value.totalComments = 0
+    }
+
+    // 获取用户统计
+    try {
+      const userResponse = await axios.get('/api/users')
+      if (userResponse.data) {
+        systemStats.value.totalUsers = Array.isArray(userResponse.data) ? userResponse.data.length : 0
+      }
+    } catch (error) {
+      console.warn('获取用户统计失败:', error)
+      systemStats.value.totalUsers = 0
+    }
+
+    showStats.value = true
+  } catch (error) {
+    console.error('加载统计数据失败:', error)
+    // 显示默认统计
+    systemStats.value = {
+      totalBlogs: blogs.value.length || 0,
+      totalComments: 0,
+      totalUsers: 0
+    }
+    showStats.value = true
+  } finally {
+    statsLoading.value = false
+  }
+}
+
 // 检查用户登录状态
 const checkLoginStatus = () => {
   const userToken = localStorage.getItem('userToken')
   const adminToken = localStorage.getItem('adminToken')
   const storedUsername = localStorage.getItem('username')
+  const storedUserRole = localStorage.getItem('userRole')
   
   if (userToken || adminToken) {
     isLoggedIn.value = true
     username.value = storedUsername || '用户'
+    userRole.value = storedUserRole || 'user'
   } else {
     isLoggedIn.value = false
     username.value = ''
+    userRole.value = ''
   }
 }
 
@@ -247,6 +461,7 @@ const handleLogout = () => {
   localStorage.removeItem('username')
   isLoggedIn.value = false
   username.value = ''
+  userRole.value = ''
   // 可以选择刷新页面或显示提示
   location.reload()
 }
@@ -284,16 +499,64 @@ onMounted(() => {
 }
 
 .header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
   color: white;
   padding: 1rem 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.username {
+  color: white;
+  font-weight: 500;
 }
 
 .header-content {
@@ -344,22 +607,23 @@ onMounted(() => {
 }
 
 .auth-buttons .el-button {
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.8);
   color: white;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .auth-buttons .el-button:hover {
   border-color: white;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .auth-buttons .el-button--primary:not(.is-plain) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .auth-buttons .el-button--primary:not(.is-plain):hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.35);
   border-color: white;
 }
 
@@ -367,14 +631,86 @@ onMounted(() => {
   padding: 2rem 0;
 }
 
-.search-section {
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 4rem 0;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   margin-bottom: 2rem;
+  border-radius: 10px;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Stats Section */
+.stats-section {
+  margin: 3rem 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4f46e5;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.search-section {
+  margin: 2rem 0;
+}
+
+.search-section h2 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.search-bar {
+  text-align: center;
 }
 
 .search-input {
   max-width: 600px;
   margin: 0 auto;
-  display: block;
 }
 
 .blog-section {
@@ -457,6 +793,135 @@ onMounted(() => {
   margin-top: 2rem;
 }
 
+/* Features Section */
+.features {
+  margin: 4rem 0;
+}
+
+.features h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+  font-size: 2rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.feature-card p {
+  color: #666;
+  line-height: 1.6;
+}
+
+/* API Section */
+.api-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.api-section h2 {
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.api-section p {
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.api-group {
+  margin-bottom: 2rem;
+}
+
+.api-group h3 {
+  color: #333;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #4f46e5;
+  padding-bottom: 0.5rem;
+}
+
+.api-endpoint {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 5px;
+  margin: 1rem 0;
+  border-left: 4px solid #4f46e5;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.method {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 3px;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  min-width: 60px;
+  text-align: center;
+}
+
+.method.get {
+  background-color: #28a745;
+}
+
+.method.post {
+  background-color: #007bff;
+}
+
+.method.put {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.method.delete {
+  background-color: #dc3545;
+}
+
+/* Footer */
+.footer {
+  background: #333;
+  color: white;
+  text-align: center;
+  padding: 2rem 0;
+  margin-top: 3rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -464,7 +929,30 @@ onMounted(() => {
   }
   
   .nav {
+    flex-direction: column;
     gap: 1rem;
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
   
   .blog-grid {
