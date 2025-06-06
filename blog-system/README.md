@@ -124,7 +124,7 @@
 
 - **后端框架**: Spring Boot 3.5.0
 - **数据库**: MySQL 8.0+ / H2 (开发环境)
-- **ORM 框架**: Spring Dat ` !QA!a JPA
+- **ORM 框架**: Spring Data JPA
 - **Java 版本**: Java 21
 - **构建工具**: Maven 3.6+
 - **API 文档**: SpringDoc OpenAPI 3
@@ -286,43 +286,56 @@ npm run dev
 
 ```
 blog-system/
-├── src/                           # 后端源码
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/example/blogsystem/
-│   │   │       ├── BlogSystemApplication.java
-│   │   │       ├── config/        # 配置类
-│   │   │       ├── controller/    # 控制器
-│   │   │       ├── entity/        # 实体类
-│   │   │       ├── repository/    # 数据访问层
-│   │   │       └── service/       # 业务逻辑层
-│   │   └── resources/
-│   │       ├── application.properties      # 默认配置
-│   │       ├── application-prod.yml        # 生产环境配置
-│   │       ├── application-docker.yml      # Docker环境配置
-│   │       ├── data.sql           # 初始数据
-│   │       └── schema.sql         # 数据库结构
-│   └── test/                      # 测试代码
-├── frontend/                      # 前端源码
+├── src/main/java/com/blogsystem/          # 后端源码 (Spring Boot)
+│   ├── config/                           # 配置类
+│   ├── controller/                       # 控制器层
+│   ├── entity/                          # 实体类
+│   ├── repository/                      # 数据访问层
+│   ├── service/                         # 业务逻辑层
+│   └── BlogSystemApplication.java       # 主启动类
+├── src/main/resources/                   # 资源文件
+│   ├── application.properties           # 应用配置
+│   ├── application-prod.yml             # 生产环境配置
+│   ├── application-docker.yml           # Docker环境配置
+│   ├── data.sql                        # 初始数据
+│   └── schema.sql                      # 数据库结构
+├── src/test/java/                       # 测试代码
+├── frontend/                            # 前端源码 (Vue.js)
 │   ├── src/
-│   │   ├── components/            # Vue组件
-│   │   ├── views/                 # 页面视图
-│   │   ├── router/                # 路由配置
-│   │   ├── stores/                # 状态管理
-│   │   ├── utils/                 # 工具函数
-│   │   ├── App.vue
-│   │   └── main.js
-│   ├── package.json
-│   └── vite.config.js
-├── Dockerfile                     # Docker镜像构建文件
-├── docker-compose.yml             # Docker编排配置
-├── start-backend.bat              # 后端启动脚本
-├── install-service.bat            # Windows服务安装脚本
-├── manage-service.bat             # Windows服务管理脚本
-├── DATABASE_SETUP.md              # 数据库配置说明
-├── DEPLOYMENT.md                  # 部署说明文档
-├── pom.xml                        # Maven配置
-└── README.md                      # 项目说明
+│   │   ├── views/                      # 页面组件
+│   │   │   ├── Admin.vue               # 管理员页面
+│   │   │   ├── Articles.vue            # 文章列表页面
+│   │   │   ├── BlogDetail.vue          # 博客详情页面
+│   │   │   ├── Home.vue                # 首页
+│   │   │   ├── Login.vue               # 登录页面
+│   │   │   ├── Register.vue            # 注册页面
+│   │   │   ├── Search.vue              # 搜索页面
+│   │   │   └── UserDashboard.vue       # 用户仪表板
+│   │   ├── router/                     # 路由配置
+│   │   │   └── index.js                # 路由定义
+│   │   ├── style/                      # 样式文件
+│   │   │   └── global.css              # 全局样式
+│   │   ├── App.vue                     # 根组件
+│   │   └── main.js                     # 入口文件
+│   ├── index.html                      # HTML模板
+│   ├── package.json                    # 依赖配置
+│   ├── package-lock.json               # 依赖锁定文件
+│   └── vite.config.js                  # Vite配置
+├── target/                              # Maven构建输出
+├── .mvn/wrapper/                        # Maven Wrapper
+├── pom.xml                             # Maven配置
+├── mvnw                                # Maven Wrapper脚本 (Unix)
+├── mvnw.cmd                            # Maven Wrapper脚本 (Windows)
+├── Dockerfile                          # Docker镜像配置
+├── docker-compose.yml                  # Docker编排配置
+├── start-backend.bat                   # 后端启动脚本
+├── install-service.bat                 # Windows服务安装脚本
+├── manage-service.bat                  # Windows服务管理脚本
+├── .gitignore                          # Git忽略文件
+├── .gitattributes                      # Git属性配置
+├── README.md                           # 项目说明
+├── DATABASE_SETUP.md                   # 数据库设置说明
+└── DEPLOYMENT.md                       # 部署说明
 ```
 
 ## ⚙️ 配置说明
