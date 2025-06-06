@@ -416,7 +416,18 @@ const selectedTag = ref('')
 const sortBy = ref('latest')
 const categories = ref([])
 const tags = ref([])
-const searchSuggestions = ref(['Vue.js', 'Spring Boot', 'JavaScript', 'Java', '前端开发', '后端开发', '数据库', 'API设计'])
+const searchSuggestions = ref([
+  "Vue.js",
+  "Spring Boot",
+  "JavaScript",
+  "Java",
+  "MySQL",
+  "前端开发",
+  "后端开发",
+  "数据库",
+  "算法",
+  "架构设计"
+])
 
 // 获取博客列表
 const fetchBlogs = async () => {
@@ -551,12 +562,12 @@ const fetchCategories = async () => {
     if (response.data && Array.isArray(response.data)) {
       categories.value = response.data
     } else {
-      // 使用模拟分类数据
+      // 提供默认分类数据（与Articles.vue保持一致）
       categories.value = [
-        { id: 1, name: '技术分享' },
-        { id: 2, name: '生活随笔' },
-        { id: 3, name: '学习笔记' },
-        { id: 4, name: '项目经验' }
+        { id: 1, name: "技术分享" },
+        { id: 2, name: "生活随笔" },
+        { id: 3, name: "学习笔记" },
+        { id: 4, name: "项目经验" }
       ]
     }
   } catch (error) {
@@ -571,12 +582,12 @@ const fetchCategories = async () => {
       }
     } catch (fallbackError) {
       console.error('获取分类失败（备选接口）:', fallbackError)
-      // 使用模拟分类数据
+      // 提供默认分类数据（与Articles.vue保持一致）
       categories.value = [
-        { id: 1, name: '技术分享' },
-        { id: 2, name: '生活随笔' },
-        { id: 3, name: '学习笔记' },
-        { id: 4, name: '项目经验' }
+        { id: 1, name: "技术分享" },
+        { id: 2, name: "生活随笔" },
+        { id: 3, name: "学习笔记" },
+        { id: 4, name: "项目经验" }
       ]
     }
   }
@@ -591,14 +602,15 @@ const fetchTags = async () => {
     }
   } catch (error) {
     console.error('获取标签失败:', error)
-    // 使用模拟数据
+    // 提供默认标签数据（与Articles.vue保持一致）
     tags.value = [
-      { id: 1, name: 'Vue.js' },
-      { id: 2, name: 'JavaScript' },
-      { id: 3, name: 'Java' },
-      { id: 4, name: 'Spring Boot' },
-      { id: 5, name: '前端开发' },
-      { id: 6, name: '后端开发' }
+      { id: 1, name: "Vue.js", isActive: true },
+      { id: 2, name: "Spring Boot", isActive: true },
+      { id: 3, name: "JavaScript", isActive: true },
+      { id: 4, name: "Java", isActive: true },
+      { id: 5, name: "MySQL", isActive: true },
+      { id: 6, name: "前端开发", isActive: true },
+      { id: 7, name: "后端开发", isActive: true }
     ]
   }
 }

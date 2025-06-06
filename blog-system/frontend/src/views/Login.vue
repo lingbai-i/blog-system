@@ -20,8 +20,8 @@
         <!-- 登录类型选择 -->
         <div class="login-type">
           <el-radio-group v-model="loginType" class="login-type-group">
-            <el-radio-button label="user">普通用户</el-radio-button>
-            <el-radio-button label="admin">管理员</el-radio-button>
+            <el-radio-button value="user">普通用户</el-radio-button>
+            <el-radio-button value="admin">管理员</el-radio-button>
           </el-radio-group>
         </div>
 
@@ -79,7 +79,7 @@
             <span>还没有账号？</span>
             <el-link type="primary" @click="goToRegister">点击注册</el-link>
           </div>
-          <el-button type="text" @click="goHome">
+          <el-button link @click="goHome">
             <el-icon><ArrowLeft /></el-icon>
             返回首页
           </el-button>

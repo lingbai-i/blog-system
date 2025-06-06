@@ -140,6 +140,12 @@
                     最多点赞
                   </span>
                 </el-option>
+                <el-option label="最多浏览" value="views">
+                  <span class="option-content">
+                    <el-icon><View /></el-icon>
+                    最多浏览
+                  </span>
+                </el-option>
               </el-select>
             </div>
 
@@ -433,21 +439,15 @@ const performSearch = async () => {
     if (tagFilter.value) {
       params.tag = tagFilter.value;
     }
+    if (sortBy.value) {
+      params.sort = sortBy.value;
+    }
 
     const response = await axios.get("/api/blogs", { params });
 
     if (response.data && response.data.content) {
       articles.value = response.data.content;
       total.value = response.data.totalElements;
-
-      // 根据排序方式排序
-      if (sortBy.value === "popular") {
-        articles.value.sort((a, b) => calculatePopularity(b) - calculatePopularity(a));
-      } else if (sortBy.value === "latest") {
-        articles.value.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      } else if (sortBy.value === "liked") {
-        articles.value.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-      }
     } else {
       articles.value = [];
       total.value = 0;

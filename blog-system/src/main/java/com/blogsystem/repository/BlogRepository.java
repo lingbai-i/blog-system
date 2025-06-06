@@ -55,4 +55,48 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     // 获取草稿博客
     Page<Blog> findByIsPublishedFalseOrderByCreatedAtDesc(Pageable pageable);
+
+    // 多条件组合搜索博客
+    @Query("SELECT DISTINCT b FROM Blog b LEFT JOIN b.tagEntities t WHERE " +
+           "b.isPublished = true AND " +
+           "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:category IS NULL OR b.category = :category) AND " +
+           "(:tag IS NULL OR t.name = :tag)")
+    Page<Blog> findBlogsWithFilters(@Param("keyword") String keyword, 
+                                   @Param("category") String category, 
+                                   @Param("tag") String tag, 
+                                   Pageable pageable);
+
+    // 按点赞数排序查询
+    @Query("SELECT b FROM Blog b WHERE " +
+           "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(b.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:category IS NULL OR b.category = :category) AND " +
+           "(:tag IS NULL OR b.tags LIKE CONCAT('%', :tag, '%')) AND " +
+           "b.isPublished = true ORDER BY b.likeCount DESC")
+    Page<Blog> findBlogsWithFiltersOrderByLikes(@Param("keyword") String keyword,
+                                              @Param("category") String category,
+                                              @Param("tag") String tag,
+                                              Pageable pageable);
+
+    // 按浏览量排序查询
+    @Query("SELECT b FROM Blog b WHERE " +
+           "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(b.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:category IS NULL OR b.category = :category) AND " +
+           "(:tag IS NULL OR b.tags LIKE CONCAT('%', :tag, '%')) AND " +
+           "b.isPublished = true ORDER BY b.viewCount DESC")
+    Page<Blog> findBlogsWithFiltersOrderByViews(@Param("keyword") String keyword,
+                                              @Param("category") String category,
+                                              @Param("tag") String tag,
+                                              Pageable pageable);
+
+    // 按热度排序查询（浏览量 + 点赞数 * 5）
+    @Query("SELECT b FROM Blog b WHERE " +
+           "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(b.content) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:category IS NULL OR b.category = :category) AND " +
+           "(:tag IS NULL OR b.tags LIKE CONCAT('%', :tag, '%')) AND " +
+           "b.isPublished = true ORDER BY (b.viewCount + b.likeCount * 5) DESC")
+    Page<Blog> findBlogsWithFiltersOrderByPopularity(@Param("keyword") String keyword,
+                                                    @Param("category") String category,
+                                                    @Param("tag") String tag,
+                                                    Pageable pageable);
 }

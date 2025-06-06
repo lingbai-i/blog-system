@@ -122,6 +122,63 @@ public class BlogService {
         return blogRepository.findByTagsContaining(tag, pageable);
     }
 
+    // 多条件组合搜索博客
+    public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
+        // 如果没有任何过滤条件，根据排序方式返回所有已发布的博客
+        if ((keyword == null || keyword.trim().isEmpty()) && 
+            (category == null || category.trim().isEmpty()) && 
+            (tag == null || tag.trim().isEmpty())) {
+            
+            // 根据排序方式创建不同的Pageable
+            Pageable sortedPageable = createSortedPageable(page, size, sort);
+            return blogRepository.findByIsPublishedTrueOrderByCreatedAtDesc(sortedPageable);
+        }
+        
+        // 使用对应的排序查询方法
+        switch (sort) {
+            case "liked":
+                return blogRepository.findBlogsWithFiltersOrderByLikes(keyword, category, tag, pageable);
+            case "popular":
+                return blogRepository.findBlogsWithFiltersOrderByPopularity(keyword, category, tag, pageable);
+            case "views":
+                return blogRepository.findBlogsWithFiltersOrderByViews(keyword, category, tag, pageable);
+            case "latest":
+            default:
+                // 创建按创建时间降序排序的Pageable
+                Pageable latestPageable = PageRequest.of(page, size, 
+                    Sort.by(Sort.Direction.DESC, "createdAt"));
+                return blogRepository.findBlogsWithFilters(
+                    keyword != null ? keyword.trim() : null,
+                    category != null ? category.trim() : null,
+                    tag != null ? tag.trim() : null,
+                    latestPageable
+                );
+        }
+    }
+    
+    private Pageable createSortedPageable(int page, int size, String sort) {
+        Sort sortOrder;
+        switch (sort) {
+            case "liked":
+                sortOrder = Sort.by(Sort.Direction.DESC, "likeCount");
+                break;
+            case "popular":
+                // 注意：JPA不支持复杂表达式排序，这里先按点赞数排序
+                sortOrder = Sort.by(Sort.Direction.DESC, "likeCount", "viewCount");
+                break;
+            case "views":
+                sortOrder = Sort.by(Sort.Direction.DESC, "viewCount");
+                break;
+            case "latest":
+            default:
+                sortOrder = Sort.by(Sort.Direction.DESC, "createdAt");
+                break;
+        }
+        return PageRequest.of(page, size, sortOrder);
+    }
+
     // 获取热门博客
     public List<Blog> getPopularBlogs(int limit) {
         Pageable pageable = PageRequest.of(0, limit);

@@ -25,6 +25,9 @@ public class Tag {
     @Column(nullable = false, unique = true, length = 50)
     private String name;
 
+    @Column(nullable = false, unique = true, length = 50)
+    private String slug;
+
     @Column(length = 200)
     private String description;
 

@@ -56,6 +56,10 @@
                 <el-icon><View /></el-icon>
                 {{ blog.viewCount || blog.views || 0 }} 次阅读
               </span>
+              <span class="meta-item">
+                <el-icon><Star /></el-icon>
+                {{ blog.likeCount || 0 }} 点赞
+              </span>
             </div>
           </header>
 
@@ -64,6 +68,15 @@
           <!-- 分享和操作 -->
           <footer class="article-footer">
             <div class="article-actions">
+              <el-button 
+                @click="likeBlog" 
+                :icon="Star" 
+                :loading="liking"
+                type="primary"
+                :disabled="hasLiked"
+              >
+                {{ hasLiked ? '已点赞' : '点赞' }} ({{ blog.likeCount || 0 }})
+              </el-button>
               <el-button @click="shareBlog" :icon="Share">分享</el-button>
               <el-button @click="goBack">返回列表</el-button>
             </div>
@@ -96,7 +109,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowLeft, User, Calendar, View, Share } from '@element-plus/icons-vue'
+import { ArrowLeft, User, Calendar, View, Share, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
@@ -108,6 +121,8 @@ const blog = ref(null)
 const relatedBlogs = ref([])
 const loading = ref(false)
 const error = ref('')
+const liking = ref(false)
+const hasLiked = ref(false)
 
 // 计算属性
 const formattedContent = computed(() => {
@@ -137,17 +152,23 @@ const fetchBlog = async () => {
     // 后端直接返回Blog对象
     if (response.data && response.data.id) {
       blog.value = response.data
+      // 检查点赞状态
+      checkLikeStatus()
       // 获取相关文章
       fetchRelatedBlogs()
     } else {
       // 如果API不可用，使用模拟数据
       blog.value = getMockBlog(blogId)
+      // 检查点赞状态
+      checkLikeStatus()
       relatedBlogs.value = getMockRelatedBlogs()
     }
   } catch (err) {
     console.error('获取博客详情失败:', err)
     // 使用模拟数据
     blog.value = getMockBlog(blogId)
+    // 检查点赞状态
+    checkLikeStatus()
     relatedBlogs.value = getMockRelatedBlogs()
   } finally {
     loading.value = false
@@ -261,6 +282,39 @@ const goBack = () => {
 
 const goToBlogDetail = (id) => {
   router.push(`/blog/${id}`)
+}
+
+// 点赞博客
+const likeBlog = async () => {
+  if (!blog.value || liking.value || hasLiked.value) return
+  
+  liking.value = true
+  try {
+    const response = await axios.post(`/api/blogs/${blog.value.id}/like`)
+    if (response.data) {
+      blog.value.likeCount = response.data.likeCount
+      hasLiked.value = true
+      // 将点赞状态保存到本地存储
+      const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
+      if (!likedBlogs.includes(blog.value.id)) {
+        likedBlogs.push(blog.value.id)
+        localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+      }
+      ElMessage.success('点赞成功！')
+    }
+  } catch (error) {
+    console.error('点赞失败:', error)
+    ElMessage.error('点赞失败，请稍后重试')
+  } finally {
+    liking.value = false
+  }
+}
+
+// 检查是否已点赞
+const checkLikeStatus = () => {
+  if (!blog.value) return
+  const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
+  hasLiked.value = likedBlogs.includes(blog.value.id)
 }
 
 // 分享博客

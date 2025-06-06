@@ -24,26 +24,17 @@ public class BlogController {
     private final BlogService blogService;
     private final UserService userService;
 
-    // 获取所有已发布的博客（分页，支持搜索、分类和标签筛选）
+    // 获取所有已发布的博客（分页，支持多条件组合搜索）
     @GetMapping
     public ResponseEntity<Page<Blog>> getAllBlogs(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String tag) {
-        Page<Blog> blogs;
-
-        // 优先级：关键词搜索 > 分类筛选 > 标签筛选 > 默认获取所有
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            blogs = blogService.searchBlogs(keyword.trim(), page, size);
-        } else if (category != null && !category.trim().isEmpty()) {
-            blogs = blogService.findBlogsByCategory(category.trim(), page, size);
-        } else if (tag != null && !tag.trim().isEmpty()) {
-            blogs = blogService.findBlogsByTag(tag.trim(), page, size);
-        } else {
-            blogs = blogService.findPublishedBlogs(page, size);
-        }
+            @RequestParam(required = false) String tag,
+            @RequestParam(defaultValue = "latest") String sort) {
+        
+        Page<Blog> blogs = blogService.searchBlogsWithFilters(keyword, category, tag, sort, page, size);
         return ResponseEntity.ok(blogs);
     }
 
