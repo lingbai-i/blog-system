@@ -617,6 +617,7 @@ const fetchTags = async () => {
 
 // 跳转到博客详情
 const goToBlogDetail = (id) => {
+  console.log('首页点击文章，ID:', id)
   router.push(`/blog/${id}`)
 }
 

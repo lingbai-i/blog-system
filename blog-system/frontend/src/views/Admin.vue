@@ -325,6 +325,8 @@ const fetchBlogs = async () => {
 
 // 查看博客
 const viewBlog = (id) => {
+  // 设置标记，表明是从管理员页面跳转的
+  sessionStorage.setItem('fromAdmin', 'true')
   router.push(`/blog/${id}`)
 }
 

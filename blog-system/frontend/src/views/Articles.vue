@@ -528,7 +528,8 @@ const handleSortChange = () => {
 };
 
 // 跳转到文章详情
-const goToArticle = (id) => {
+const goToArticleDetail = (id) => {
+  console.log('文章列表页点击文章，ID:', id)
   router.push(`/blog/${id}`);
 };
 

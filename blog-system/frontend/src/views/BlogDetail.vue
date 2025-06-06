@@ -91,7 +91,10 @@
               v-for="relatedBlog in relatedBlogs"
               :key="relatedBlog.id"
               class="related-card"
-              @click="goToBlogDetail(relatedBlog.id)"
+              @click.stop="goToBlogDetail(relatedBlog.id)"
+              role="button"
+              tabindex="0"
+              @keyup.enter="goToBlogDetail(relatedBlog.id)"
             >
               <h3 class="related-title">{{ relatedBlog.title }}</h3>
               <p class="related-summary">{{ relatedBlog.summary || relatedBlog.content.substring(0, 100) + '...' }}</p>
@@ -107,7 +110,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, User, Calendar, View, Share, Star } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -277,11 +280,43 @@ const goHome = () => {
 }
 
 const goBack = () => {
-  router.go(-1)
+  // 检查是否从管理员页面来的
+  const referrer = document.referrer
+  const fromAdmin = referrer.includes('/admin') || 
+                   sessionStorage.getItem('fromAdmin') === 'true'
+  
+  if (fromAdmin) {
+    // 如果是从管理员页面来的，返回到管理员页面
+    router.push('/admin')
+    // 清除标记
+    sessionStorage.removeItem('fromAdmin')
+  } else {
+    // 否则返回上一页
+    router.go(-1)
+  }
 }
 
 const goToBlogDetail = (id) => {
-  router.push(`/blog/${id}`)
+  console.log('点击相关文章，ID:', id)
+  // 如果当前是从管理员页面来的，保持这个标记
+  const fromAdmin = sessionStorage.getItem('fromAdmin') === 'true'
+  if (fromAdmin) {
+    sessionStorage.setItem('fromAdmin', 'true')
+  }
+  
+  // 如果跳转到当前页面，强制重新加载
+  if (route.params.id === id.toString()) {
+    console.log('跳转到当前页面，强制重新加载')
+    window.location.reload()
+    return
+  }
+  
+  // 跳转到不同页面，watch会自动处理数据重新加载
+  router.push(`/blog/${id}`).then(() => {
+    console.log('路由跳转成功')
+  }).catch(err => {
+    console.error('路由跳转失败:', err)
+  })
 }
 
 // 点赞博客
@@ -345,6 +380,18 @@ const formatDate = (date) => {
     day: 'numeric'
   })
 }
+
+// 监听路由参数变化
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      console.log('路由参数变化，重新获取数据:', newId)
+      fetchBlog()
+    }
+  },
+  { immediate: true }
+)
 
 // 组件挂载时获取数据
 onMounted(() => {
@@ -536,11 +583,21 @@ onMounted(() => {
   padding: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+  outline: none;
 }
 
-.related-card:hover {
+.related-card:hover, .related-card:focus {
   border-color: #409eff;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.related-card:active {
+  transform: translateY(0);
+  border-color: #3a8ee6;
+  box-shadow: 0 1px 4px rgba(64, 158, 255, 0.3);
 }
 
 .related-title {

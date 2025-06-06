@@ -154,8 +154,12 @@
                 label-width="80px"
                 class="profile-form"
               >
-                <el-form-item label="用户名">
-                  <el-input v-model="userInfo.username" disabled />
+                <el-form-item label="用户名" prop="username">
+                  <el-input 
+                    v-model="profileForm.username" 
+                    placeholder="请输入用户名"
+                    clearable
+                  />
                 </el-form-item>
                 <el-form-item label="邮箱" prop="email">
                   <el-input 
@@ -164,10 +168,16 @@
                     clearable
                   />
                 </el-form-item>
-                <el-form-item label="角色">
-                  <el-tag :type="userInfo.role === 'admin' ? 'danger' : 'primary'">
-                    {{ userInfo.role === 'admin' ? '管理员' : '普通用户' }}
-                  </el-tag>
+                <el-form-item label="简介" prop="bio">
+                  <el-input 
+                    v-model="profileForm.bio" 
+                    type="textarea"
+                    :rows="4"
+                    placeholder="请输入个人简介（可选，最多500字）"
+                    maxlength="500"
+                    show-word-limit
+                    clearable
+                  />
                 </el-form-item>
                 <el-form-item label="注册时间">
                   <span>{{ formatDate(userInfo.createdAt) }}</span>
@@ -224,13 +234,22 @@ const userInfo = reactive({
 
 // 个人资料表单
 const profileForm = reactive({
-  email: ''
+  username: '',
+  email: '',
+  bio: ''
 })
 
 // 个人资料验证规则
 const profileRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 20, message: '用户名长度在 2 到 20 个字符', trigger: 'blur' }
+  ],
   email: [
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  bio: [
+    { max: 500, message: '简介长度不能超过500个字符', trigger: 'blur' }
   ]
 }
 
@@ -287,7 +306,9 @@ const fetchUserInfo = async () => {
     Object.assign(userInfo, response.data)
     console.log('User info from API:', response.data)
     // 初始化个人资料表单
+    profileForm.username = response.data.username || ''
     profileForm.email = response.data.email || ''
+    profileForm.bio = response.data.bio || ''
   } catch (error) {
     console.warn('获取用户信息失败:', error)
     // 从localStorage获取基本信息
@@ -305,11 +326,15 @@ const fetchUserInfo = async () => {
       }
       Object.assign(userInfo, userData)
       console.log('User info set from localStorage:', userData)
+      // 初始化个人资料表单
+      profileForm.username = username
+      profileForm.bio = ''
     } else {
       console.error('No username found in localStorage')
     }
     // 初始化个人资料表单
-    profileForm.email = ''
+      profileForm.email = ''
+      profileForm.bio = ''
   }
 }
 
@@ -460,11 +485,18 @@ const updateProfile = async () => {
     } : {}
     
     const response = await axios.put('/api/auth/profile', {
-      email: profileForm.email
+      username: profileForm.username,
+      email: profileForm.email,
+      bio: profileForm.bio
     }, config)
     
     // 更新用户信息
+    userInfo.username = profileForm.username
     userInfo.email = profileForm.email
+    userInfo.bio = profileForm.bio
+    
+    // 更新localStorage中的用户名
+    localStorage.setItem('username', profileForm.username)
     
     ElMessage.success('个人资料更新成功')
   } catch (error) {
