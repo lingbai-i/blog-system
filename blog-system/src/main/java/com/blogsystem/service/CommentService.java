@@ -34,7 +34,7 @@ public class CommentService {
         comment.setContent(content);
         comment.setAuthorName(authorName);
         comment.setAuthorEmail(authorEmail);
-        comment.setIsApproved(false); // 默认需要审核
+        comment.setIsApproved(true); // 直接通过，无需审核
 
         return commentRepository.save(comment);
     }
@@ -49,7 +49,7 @@ public class CommentService {
         reply.setContent(content);
         reply.setAuthorName(authorName);
         reply.setAuthorEmail(authorEmail);
-        reply.setIsApproved(false); // 默认需要审核
+        reply.setIsApproved(true); // 直接通过，无需审核
 
         return commentRepository.save(reply);
     }
@@ -76,12 +76,12 @@ public class CommentService {
 
     // 获取博客的顶级评论（不包括回复）
     public List<Comment> getTopLevelCommentsByBlog(Blog blog) {
-        return commentRepository.findByBlogAndParentIsNullAndIsApprovedTrueOrderByCreatedAtAsc(blog);
+        return commentRepository.findByBlogAndParentIsNullOrderByCreatedAtAsc(blog);
     }
 
     // 获取评论的回复
     public List<Comment> getRepliesByComment(Comment parent) {
-        return commentRepository.findByParentAndIsApprovedTrueOrderByCreatedAtAsc(parent);
+        return commentRepository.findByParentOrderByCreatedAtAsc(parent);
     }
 
     // 获取待审核的评论（分页）

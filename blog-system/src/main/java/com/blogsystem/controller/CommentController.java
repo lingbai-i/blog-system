@@ -1,10 +1,11 @@
 package com.blogsystem.controller;
 
-import com.blogsystem.entity.Comment;
 import com.blogsystem.entity.Blog;
+import com.blogsystem.entity.Comment;
 import com.blogsystem.entity.User;
-import com.blogsystem.service.CommentService;
+import com.blogsystem.dto.CommentDTO;
 import com.blogsystem.service.BlogService;
+import com.blogsystem.service.CommentService;
 import com.blogsystem.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,10 +31,17 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<Object> createComment(@RequestBody Map<String, Object> request) {
         try {
+            if (request.get("blogId") == null || request.get("content") == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "缺少必要参数");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
             Long blogId = Long.valueOf(request.get("blogId").toString());
             String content = request.get("content").toString();
-            String authorName = request.get("authorName").toString();
-            String authorEmail = request.get("authorEmail").toString();
+            String authorName = "匿名用户";
+            String authorEmail = "";
 
             Optional<Blog> blogOpt = blogService.findById(blogId);
             if (!blogOpt.isPresent()) {
@@ -47,15 +55,19 @@ public class CommentController {
             if (request.containsKey("userId") && request.get("userId") != null) {
                 Long userId = Long.valueOf(request.get("userId").toString());
                 Optional<User> userOpt = userService.findById(userId);
-                user = userOpt.orElse(null);
+                if (userOpt.isPresent()) {
+                    user = userOpt.get();
+                    authorName = user.getUsername(); // 使用真实用户名
+                    authorEmail = user.getEmail() != null ? user.getEmail() : "";
+                }
             }
 
             Comment comment = commentService.createComment(blogOpt.get(), user, content, authorName, authorEmail);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "评论提交成功，等待审核");
-            response.put("comment", comment);
+            response.put("message", "评论提交成功");
+            response.put("comment", CommentDTO.fromEntity(comment));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -70,11 +82,18 @@ public class CommentController {
     @PostMapping("/reply")
     public ResponseEntity<Object> createReply(@RequestBody Map<String, Object> request) {
         try {
+            if (request.get("blogId") == null || request.get("parentId") == null || request.get("content") == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "缺少必要参数");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
             Long blogId = Long.valueOf(request.get("blogId").toString());
             Long parentId = Long.valueOf(request.get("parentId").toString());
             String content = request.get("content").toString();
-            String authorName = request.get("authorName").toString();
-            String authorEmail = request.get("authorEmail").toString();
+            String authorName = "匿名用户";
+            String authorEmail = "";
 
             Optional<Blog> blogOpt = blogService.findById(blogId);
             Optional<Comment> parentOpt = commentService.findById(parentId);
@@ -90,7 +109,11 @@ public class CommentController {
             if (request.containsKey("userId") && request.get("userId") != null) {
                 Long userId = Long.valueOf(request.get("userId").toString());
                 Optional<User> userOpt = userService.findById(userId);
-                user = userOpt.orElse(null);
+                if (userOpt.isPresent()) {
+                    user = userOpt.get();
+                    authorName = user.getUsername(); // 使用真实用户名
+                    authorEmail = user.getEmail() != null ? user.getEmail() : "";
+                }
             }
 
             Comment reply = commentService.createReply(blogOpt.get(), user, parentOpt.get(), content, authorName,
@@ -98,8 +121,8 @@ public class CommentController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "回复提交成功，等待审核");
-            response.put("comment", reply);
+            response.put("message", "回复提交成功");
+            response.put("comment", CommentDTO.fromEntity(reply));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -112,22 +135,28 @@ public class CommentController {
 
     // 获取博客的所有已审核评论
     @GetMapping("/blog/{blogId}")
-    public ResponseEntity<List<Comment>> getCommentsByBlog(@PathVariable Long blogId) {
+    public ResponseEntity<List<CommentDTO>> getCommentsByBlog(@PathVariable Long blogId) {
         Optional<Blog> blogOpt = blogService.findById(blogId);
         if (blogOpt.isPresent()) {
             List<Comment> comments = commentService.getTopLevelCommentsByBlog(blogOpt.get());
-            return ResponseEntity.ok(comments);
+            List<CommentDTO> commentDTOs = comments.stream()
+                    .map(CommentDTO::fromEntity)
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(commentDTOs);
         }
         return ResponseEntity.notFound().build();
     }
 
     // 获取评论的回复
     @GetMapping("/{commentId}/replies")
-    public ResponseEntity<List<Comment>> getRepliesByComment(@PathVariable Long commentId) {
+    public ResponseEntity<List<CommentDTO>> getRepliesByComment(@PathVariable Long commentId) {
         Optional<Comment> commentOpt = commentService.findById(commentId);
         if (commentOpt.isPresent()) {
             List<Comment> replies = commentService.getRepliesByComment(commentOpt.get());
-            return ResponseEntity.ok(replies);
+            List<CommentDTO> replyDTOs = replies.stream()
+                    .map(CommentDTO::fromEntity)
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(replyDTOs);
         }
         return ResponseEntity.notFound().build();
     }

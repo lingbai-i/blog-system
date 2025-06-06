@@ -104,6 +104,11 @@
             </div>
           </div>
         </section>
+
+        <!-- 评论区域 -->
+        <section v-if="blog" class="comment-section">
+          <CommentSection :blog-id="blog.id" />
+        </section>
       </div>
     </main>
   </div>
@@ -112,9 +117,10 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ArrowLeft, User, Calendar, View, Share, Star } from '@element-plus/icons-vue'
+import { ArrowLeft, User, Calendar, View, Share, Star, TrendCharts } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import CommentSection from '@/components/CommentSection.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -617,6 +623,12 @@ onMounted(() => {
 .related-meta {
   color: #888;
   font-size: 0.8rem;
+}
+
+.comment-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e0e0e0;
 }
 
 @media (max-width: 768px) {

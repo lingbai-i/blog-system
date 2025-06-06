@@ -27,9 +27,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 查找某个评论的回复
     List<Comment> findByParentAndIsApprovedTrueOrderByCreatedAtAsc(Comment parent);
+    
+    // 查找某个评论的所有回复（无审核过滤）
+    List<Comment> findByParentOrderByCreatedAtAsc(Comment parent);
 
     // 查找顶级评论（没有父评论）
     List<Comment> findByBlogAndParentIsNullAndIsApprovedTrueOrderByCreatedAtAsc(Blog blog);
+    
+    // 查找顶级评论（没有父评论，无审核过滤）
+    List<Comment> findByBlogAndParentIsNullOrderByCreatedAtAsc(Blog blog);
 
     // 统计总评论数
     long countByIsApprovedTrue();
