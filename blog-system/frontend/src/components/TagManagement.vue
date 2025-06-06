@@ -12,7 +12,7 @@
       <div class="search-row">
         <div class="search-group">
           <el-input
-            v-model="searchKeyword"
+            v-model="searchKeyword" 
             placeholder="搜索标签名称或描述..."
             class="search-input"
             @keyup.enter="searchTags"

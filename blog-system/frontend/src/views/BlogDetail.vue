@@ -53,8 +53,8 @@
                 {{ formatDate(blog.createdAt) }}
               </span>
               <span class="meta-item">
-                <el-icon><View /></el-icon>
-                {{ blog.viewCount || blog.views || 0 }} 次阅读
+                <el-icon><TrendCharts /></el-icon>
+                热度 {{ blog.viewCount || blog.views || 0 }}
               </span>
               <span class="meta-item">
                 <el-icon><Star /></el-icon>

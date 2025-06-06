@@ -32,7 +32,7 @@ public class BlogController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String tag,
-            @RequestParam(defaultValue = "latest") String sort) {
+            @RequestParam(defaultValue = "publishTime") String sort) {
         
         Page<Blog> blogs = blogService.searchBlogsWithFilters(keyword, category, tag, sort, page, size);
         return ResponseEntity.ok(blogs);

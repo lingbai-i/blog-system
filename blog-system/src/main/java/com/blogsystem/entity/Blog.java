@@ -48,6 +48,9 @@ public class Blog {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
+  @Column(name = "published_at")
+  private LocalDateTime publishedAt;
+
   @Column(name = "is_published")
   private Boolean isPublished = false;
 

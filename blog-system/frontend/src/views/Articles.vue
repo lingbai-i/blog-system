@@ -122,16 +122,10 @@
                 class="filter-select sort-select"
                 size="large"
               >
-                <el-option label="最新发布" value="latest">
+                <el-option label="发布时间" value="publishTime">
                   <span class="option-content">
                     <el-icon><Calendar /></el-icon>
-                    最新发布
-                  </span>
-                </el-option>
-                <el-option label="热度排序" value="popular">
-                  <span class="option-content">
-                    <el-icon><View /></el-icon>
-                    热度排序
+                    发布时间
                   </span>
                 </el-option>
                 <el-option label="最多点赞" value="liked">
@@ -140,10 +134,10 @@
                     最多点赞
                   </span>
                 </el-option>
-                <el-option label="最多浏览" value="views">
+                <el-option label="热度排序" value="popular">
                   <span class="option-content">
-                    <el-icon><View /></el-icon>
-                    最多浏览
+                    <el-icon><TrendCharts /></el-icon>
+                    热度排序
                   </span>
                 </el-option>
               </el-select>
@@ -217,16 +211,12 @@
                   {{ article.category }}
                 </span>
                 <span class="views">
-                  <el-icon><View /></el-icon>
-                  {{ article.viewCount || 0 }} 次浏览
+                  <el-icon><TrendCharts /></el-icon>
+                  热度 {{ article.viewCount || 0 }}
                 </span>
                 <span class="likes">
                   <el-icon><Star /></el-icon>
                   {{ article.likeCount || 0 }} 点赞
-                </span>
-                <span class="popularity">
-                  <el-icon><TrendCharts /></el-icon>
-                  热度 {{ calculatePopularity(article) }}
                 </span>
               </div>
               <div class="article-tags" v-if="article.tags">
@@ -310,7 +300,7 @@ const total = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
-const sortBy = ref("latest");
+const sortBy = ref("publishTime");
 const searchKeyword = ref("");
 const categoryFilter = ref("");
 const tagFilter = ref("");
@@ -362,7 +352,7 @@ watch(
     searchKeyword.value = newQuery.keyword || "";
     categoryFilter.value = newQuery.category || "";
     tagFilter.value = newQuery.tag || "";
-    sortBy.value = newQuery.sort || "latest";
+    sortBy.value = newQuery.sort || "publishTime";
     performSearch();
   }
 );
@@ -443,6 +433,10 @@ const performSearch = async () => {
       params.sort = sortBy.value;
     }
 
+    // 调试日志
+    console.log('搜索参数:', params);
+    console.log('当前排序方式:', sortBy.value);
+
     const response = await axios.get("/api/blogs", { params });
 
     if (response.data && response.data.content) {
@@ -477,7 +471,7 @@ const updateUrlParams = () => {
   if (tagFilter.value) {
     query.tag = tagFilter.value;
   }
-  if (sortBy.value !== "latest") {
+  if (sortBy.value !== "publishTime") {
     query.sort = sortBy.value;
   }
   
@@ -489,7 +483,7 @@ const clearSearch = () => {
   searchKeyword.value = "";
   categoryFilter.value = "";
   tagFilter.value = "";
-  sortBy.value = "latest";
+  sortBy.value = "publishTime";
   currentPage.value = 1;
   router.replace({ query: {} });
   performSearch();
@@ -501,13 +495,7 @@ const searchSuggestion = (suggestion) => {
   performSearch();
 };
 
-// 计算文章热度（基于浏览量和点赞数）
-const calculatePopularity = (article) => {
-  const views = article.viewCount || 0;
-  const likes = article.likeCount || 0;
-  // 热度计算公式：浏览量 + 点赞数 * 5
-  return views + likes * 5;
-};
+
 
 // 搜索处理
 const handleSearch = () => {
@@ -532,8 +520,19 @@ const handleCurrentChange = (newPage) => {
   performSearch();
 };
 
+// 处理排序变化
+const handleSortChange = () => {
+  console.log('排序方式已改变为:', sortBy.value);
+  currentPage.value = 1;
+  performSearch();
+};
+
 // 跳转到文章详情
 const goToArticle = (id) => {
+  router.push(`/blog/${id}`);
+};
+
+const goToArticleDetail = (id) => {
   router.push(`/blog/${id}`);
 };
 
@@ -702,10 +701,7 @@ const formatDate = (dateString) => {
   font-size: 1rem;
 }
 
-.popularity {
-  color: #ffd700 !important;
-  font-weight: 600;
-}
+
 
 .article-tags {
   display: flex;

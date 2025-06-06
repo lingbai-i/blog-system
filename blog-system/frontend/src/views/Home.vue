@@ -114,8 +114,8 @@
                     {{ formatDate(blog.createdAt) }}
                   </span>
                   <span class="blog-views">
-                    <el-icon><View /></el-icon>
-                    {{ blog.viewCount || blog.views || 0 }}
+                    <el-icon><TrendCharts /></el-icon>
+                    热度 {{ blog.viewCount || blog.views || 0 }}
                   </span>
                 </div>
               </div>
@@ -332,10 +332,10 @@
               placeholder="选择排序"
               class="sort-select"
             >
-              <el-option label="最新发布" value="createTime">
+              <el-option label="发布时间" value="publishTime">
                 <div class="option-content">
                   <el-icon><Calendar /></el-icon>
-                  <span>最新发布</span>
+                  <span>发布时间</span>
                 </div>
               </el-option>
               <el-option label="最受欢迎" value="popularity">
@@ -413,7 +413,7 @@ const systemStats = ref({
 const searchDialogVisible = ref(false)
 const selectedCategory = ref('')
 const selectedTag = ref('')
-const sortBy = ref('latest')
+const sortBy = ref('publishTime')
 const categories = ref([])
 const tags = ref([])
 const searchSuggestions = ref([
@@ -534,7 +534,7 @@ const performSearch = () => {
    }
   
   if (sortBy.value) {
-    query.sortBy = sortBy.value
+    query.sort = sortBy.value
   }
   
   // 关闭弹窗并跳转到文章页面
@@ -547,7 +547,7 @@ const clearSearch = () => {
   searchKeyword.value = ''
   selectedCategory.value = ''
   selectedTag.value = ''
-  sortBy.value = 'latest'
+  sortBy.value = 'publishTime'
 }
 
 // 选择搜索建议
