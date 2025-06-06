@@ -4,11 +4,13 @@
 
 ## 🎯 最新更新
 
+- ✅ **文章排序功能**：新增按创建时间、热度、点赞数、浏览量排序功能
+- ✅ **文章点赞功能**：实现文章点赞、点赞计数和防重复点赞机制
+- ✅ **多条件搜索**：增强文章搜索和筛选功能
 - ✅ **作者信息显示**：修复了新发布文章不显示作者名的问题
 - ✅ **Token 认证优化**：完善了用户身份验证机制
 - ✅ **代码结构优化**：清理了废弃文件，提升了代码质量
 - ✅ **文档完善**：更新了部署和配置说明
-- ✅ **功能状态更新**：根据前后端实现情况更新功能完成状态
 
 ## 🚀 功能特性
 
@@ -21,8 +23,10 @@
 - ✅ 文章发布/草稿状态切换（前端：UserDashboard.vue + 后端：BlogController.java）
 - ✅ 分页显示文章列表（前端：Articles.vue + 后端：BlogController.java）
 - ✅ 文章详情页面（前端：BlogDetail.vue + 后端：BlogController.java）
+- ✅ 文章排序功能（前端：Articles.vue + 后端：BlogController.java）
+- ✅ 文章点赞功能（前端：BlogDetail.vue + 后端：BlogController.java）
 - ⚠️ 支持 Markdown 编辑器（后端已支持，前端使用基础文本编辑器）
-- ⚠️ 文章浏览量统计（后端已实现，前端显示待完善）
+- ✅ 文章浏览量统计（前后端已实现）
 
 #### 👥 用户系统
 
@@ -48,6 +52,7 @@
 - ✅ 按分类筛选文章（前端：Articles.vue + 后端：BlogController.java）
 - ✅ 按标签筛选文章（前端：Articles.vue + 后端：BlogController.java）
 - ✅ 最新文章展示（前端：Home.vue + 后端：BlogController.java）
+- ✅ 多条件排序（按时间、热度、点赞、浏览量）（前端：Articles.vue + 后端：BlogController.java）
 - ⚠️ 热门文章推荐（后端逻辑待实现）
 
 #### 📊 统计功能
@@ -237,6 +242,8 @@ npm run dev
 - `DELETE /api/blogs/{id}` - 删除博客
 - `PUT /api/blogs/{id}/publish` - 发布/取消发布博客
 - `GET /api/blogs/search?keyword={keyword}` - 搜索博客
+- `POST /api/blogs/{id}/like` - 点赞博客
+- `GET /api/blogs?sortBy={sortBy}` - 按条件排序获取博客（支持：time、heat、likes、views）
 
 #### 管理员相关
 
