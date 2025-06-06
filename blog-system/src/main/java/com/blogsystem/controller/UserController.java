@@ -65,7 +65,13 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<Object> loginUser(@RequestBody Map<String, String> request) {
         String account = request.get("account");
+        String username = request.get("username");
         String password = request.get("password");
+
+        // 如果没有account字段，使用username字段
+        if (account == null && username != null) {
+            account = username;
+        }
 
         Optional<User> userOpt = userService.authenticate(account, password);
 
@@ -91,7 +97,7 @@ public class UserController {
     }
 
     // 获取用户信息
-    @GetMapping("/{id}")
+    @GetMapping("/user/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         Optional<User> user = userService.findById(id);
         return user.map(ResponseEntity::ok)

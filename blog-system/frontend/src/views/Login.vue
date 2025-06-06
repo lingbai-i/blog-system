@@ -6,7 +6,7 @@
       <div class="circle circle-2"></div>
       <div class="circle circle-3"></div>
     </div>
-    
+
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
@@ -57,9 +57,7 @@
 
           <el-form-item>
             <div class="login-options">
-              <el-checkbox v-model="loginForm.rememberMe">
-                记住我
-              </el-checkbox>
+              <el-checkbox v-model="loginForm.rememberMe"> 记住我 </el-checkbox>
             </div>
           </el-form-item>
 
@@ -71,7 +69,7 @@
               :loading="loading"
               @click="handleLogin"
             >
-              {{ loading ? '登录中...' : '登录' }}
+              {{ loading ? "登录中..." : "登录" }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -92,158 +90,175 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { User, Lock, ArrowLeft } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { User, Lock, ArrowLeft } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import axios from "axios";
 
-const router = useRouter()
-const loginFormRef = ref()
-const loading = ref(false)
+const router = useRouter();
+const loginFormRef = ref();
+const loading = ref(false);
 
 // 登录类型
-const loginType = ref('user')
+const loginType = ref("user");
 
 // 表单数据
 const loginForm = reactive({
-  username: '',
-  password: '',
-  rememberMe: false
-})
+  username: "",
+  password: "",
+  rememberMe: false,
+});
 
 // 表单验证规则
 const loginRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    {
+      min: 3,
+      max: 20,
+      message: "用户名长度在 3 到 20 个字符",
+      trigger: "blur",
+    },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
-  ]
-}
+    { required: true, message: "请输入密码", trigger: "blur" },
+    { min: 6, max: 20, message: "密码长度在 6 到 20 个字符", trigger: "blur" },
+  ],
+};
 
 // 处理登录
 const handleLogin = async () => {
-  if (!loginFormRef.value) return
-  
+  if (!loginFormRef.value) return;
+
   try {
-    const valid = await loginFormRef.value.validate()
-    if (!valid) return
-    
-    loading.value = true
-    
+    const valid = await loginFormRef.value.validate();
+    if (!valid) return;
+
+    loading.value = true;
+
     try {
-      const endpoint = loginType.value === 'admin' ? '/api/admin/login' : '/api/auth/login'
+      const endpoint =
+        loginType.value === "admin" ? "/api/admin/login" : "/api/auth/login";
       const response = await axios.post(endpoint, {
-        account: loginForm.username,
-        password: loginForm.password
-      })
-      
+        username: loginForm.username,
+        password: loginForm.password,
+      });
+
       if (response.data.success) {
         // 保存token和用户信息
-        const token = response.data.data.token
-        const userInfo = response.data.data.user || response.data.data
-        
-        if (loginType.value === 'admin') {
-          localStorage.setItem('adminToken', token)
-          localStorage.setItem('userRole', 'admin')
+        const token = response.data.data.token;
+        const userInfo = response.data.data.user || response.data.data;
+
+        if (loginType.value === "admin") {
+          localStorage.setItem("adminToken", token);
+          localStorage.setItem("userRole", "admin");
         } else {
-          localStorage.setItem('userToken', token)
-          localStorage.setItem('userRole', 'user')
+          localStorage.setItem("userToken", token);
+          localStorage.setItem("userRole", "user");
         }
-        
-        localStorage.setItem('username', userInfo.username || loginForm.username)
-        
+
+        localStorage.setItem(
+          "username",
+          userInfo.username || loginForm.username
+        );
+
         if (loginForm.rememberMe) {
-          localStorage.setItem('rememberedUsername', loginForm.username)
+          localStorage.setItem("rememberedUsername", loginForm.username);
         } else {
-          localStorage.removeItem('rememberedUsername')
+          localStorage.removeItem("rememberedUsername");
         }
-        
-        ElMessage.success('登录成功')
-        
+
+        ElMessage.success("登录成功");
+
         // 根据角色跳转到不同页面
-        if (loginType.value === 'admin') {
-          router.push('/admin')
+        if (loginType.value === "admin") {
+          router.push("/admin");
         } else {
-          router.push('/')
+          router.push("/");
         }
       } else {
-        ElMessage.error(response.data.message || '登录失败')
+        ElMessage.error(response.data.message || "登录失败");
       }
     } catch (error) {
-      console.error('登录请求失败:', error)
-      
+      console.error("登录请求失败:", error);
+
       // 模拟登录验证
-      let loginSuccess = false
-      
-      if (loginType.value === 'admin' && loginForm.username === 'admin' && loginForm.password === 'admin123') {
+      let loginSuccess = false;
+
+      if (
+        loginType.value === "admin" &&
+        loginForm.username === "admin" &&
+        loginForm.password === "admin123"
+      ) {
         // 管理员登录
-        const mockToken = 'mock-admin-token-' + Date.now()
-        localStorage.setItem('adminToken', mockToken)
-        localStorage.setItem('userRole', 'admin')
-        localStorage.setItem('username', 'admin')
-        loginSuccess = true
-        router.push('/admin')
-      } else if (loginType.value === 'user' && loginForm.username === 'user' && loginForm.password === 'user123') {
+        const mockToken = "mock-admin-token-" + Date.now();
+        localStorage.setItem("adminToken", mockToken);
+        localStorage.setItem("userRole", "admin");
+        localStorage.setItem("username", "admin");
+        loginSuccess = true;
+        router.push("/admin");
+      } else if (
+        loginType.value === "user" &&
+        loginForm.username === "user" &&
+        loginForm.password === "user123"
+      ) {
         // 普通用户登录
-        const mockToken = 'mock-user-token-' + Date.now()
-        localStorage.setItem('userToken', mockToken)
-        localStorage.setItem('userRole', 'user')
-        localStorage.setItem('username', 'user')
-        loginSuccess = true
-        router.push('/')
+        const mockToken = "mock-user-token-" + Date.now();
+        localStorage.setItem("userToken", mockToken);
+        localStorage.setItem("userRole", "user");
+        localStorage.setItem("username", "user");
+        loginSuccess = true;
+        router.push("/");
       }
-      
+
       if (loginSuccess) {
         if (loginForm.rememberMe) {
-          localStorage.setItem('rememberedUsername', loginForm.username)
+          localStorage.setItem("rememberedUsername", loginForm.username);
         } else {
-          localStorage.removeItem('rememberedUsername')
+          localStorage.removeItem("rememberedUsername");
         }
-        ElMessage.success('登录成功')
+        ElMessage.success("登录成功");
       } else {
-        ElMessage.error('用户名或密码错误')
+        ElMessage.error("用户名或密码错误");
       }
     }
   } catch (error) {
-    console.error('表单验证失败:', error)
+    console.error("表单验证失败:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 返回首页
 const goHome = () => {
-  router.push('/')
-}
+  router.push("/");
+};
 
 // 跳转到注册页面
 const goToRegister = () => {
-  router.push('/register')
-}
+  router.push("/register");
+};
 
 // 组件挂载时检查是否有记住的用户名
 onMounted(() => {
-  const rememberedUsername = localStorage.getItem('rememberedUsername')
+  const rememberedUsername = localStorage.getItem("rememberedUsername");
   if (rememberedUsername) {
-    loginForm.username = rememberedUsername
-    loginForm.rememberMe = true
+    loginForm.username = rememberedUsername;
+    loginForm.rememberMe = true;
   }
-  
+
   // 如果已经登录，根据角色跳转到对应页面
-  const adminToken = localStorage.getItem('adminToken')
-  const userToken = localStorage.getItem('userToken')
-  const userRole = localStorage.getItem('userRole')
-  
-  if (adminToken && userRole === 'admin') {
-    router.push('/admin')
-  } else if (userToken && userRole === 'user') {
-    router.push('/dashboard')
+  const adminToken = localStorage.getItem("adminToken");
+  const userToken = localStorage.getItem("userToken");
+  const userRole = localStorage.getItem("userRole");
+
+  if (adminToken && userRole === "admin") {
+    router.push("/admin");
+  } else if (userToken && userRole === "user") {
+    router.push("/dashboard");
   }
-})
+});
 </script>
 
 <style scoped>
@@ -301,7 +316,8 @@ onMounted(() => {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
     opacity: 0.7;
   }
@@ -405,7 +421,9 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.login-type-group .el-radio-button__original-radio:checked + .el-radio-button__inner {
+.login-type-group
+  .el-radio-button__original-radio:checked
+  + .el-radio-button__inner {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
@@ -445,13 +463,18 @@ onMounted(() => {
 }
 
 .login-button::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s;
 }
 
@@ -538,22 +561,24 @@ onMounted(() => {
   .login-page {
     padding: 0.5rem;
   }
-  
+
   .login-card {
     padding: 2rem 1.5rem;
     border-radius: 16px;
   }
-  
+
   .login-title {
     font-size: 1.6rem;
   }
-  
+
   .logo-icon {
     width: 60px;
     height: 60px;
   }
-  
-  .circle-1, .circle-2, .circle-3 {
+
+  .circle-1,
+  .circle-2,
+  .circle-3 {
     display: none;
   }
 }
@@ -562,11 +587,11 @@ onMounted(() => {
   .login-card {
     padding: 1.5rem 1rem;
   }
-  
+
   .login-title {
     font-size: 1.4rem;
   }
-  
+
   .login-button {
     height: 44px;
     font-size: 1rem;
