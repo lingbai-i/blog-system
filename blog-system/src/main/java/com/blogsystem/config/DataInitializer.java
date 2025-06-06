@@ -13,14 +13,13 @@ import com.blogsystem.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
+import org.springframework.boot.CommandLineRunner;
 
 import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
-public class DataInitializer {
+public class DataInitializer implements CommandLineRunner {
 
     private final UserService userService;
     private final BlogService blogService;
@@ -29,8 +28,8 @@ public class DataInitializer {
     private final CategoryService categoryService;
     private final PasswordEncoder passwordEncoder;
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void initializeData() {
+    @Override
+    public void run(String... args) throws Exception {
         try {
             System.out.println("DataInitializer 已启动，开始简化的数据初始化...");
             // 简化的数据初始化，只创建基础标签和分类
@@ -85,7 +84,7 @@ public class DataInitializer {
                 System.out.println("标签已存在: " + name);
             }
         } catch (Exception e) {
-            System.out.println("创建标签失败: " + name + ", 错误: " + e.getMessage());
+            System.err.println("创建标签时出错: " + e.getMessage());
         }
     }
 
@@ -102,7 +101,7 @@ public class DataInitializer {
                 System.out.println("分类已存在: " + name);
             }
         } catch (Exception e) {
-            System.out.println("创建分类失败: " + name + ", 错误: " + e.getMessage());
+            System.err.println("创建分类时出错: " + e.getMessage());
         }
     }
 }
