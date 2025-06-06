@@ -1212,7 +1212,8 @@ onMounted(() => {
 }
 
 .search-nav-link:hover {
-  color: #4f46e5;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 :deep(.search-dialog) {
@@ -1234,8 +1235,31 @@ onMounted(() => {
 }
 
 :deep(.search-dialog .el-dialog__headerbtn .el-dialog__close) {
-  color: white;
-  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+:deep(.search-dialog .el-dialog__headerbtn .el-dialog__close:hover) {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+  transform: none;
+}
+
+:deep(.search-dialog .el-dialog__headerbtn .el-dialog__close:active) {
+  background: rgba(255, 255, 255, 0.12);
+  transition: all 0.1s ease;
 }
 
 :deep(.search-dialog .el-dialog__body) {
@@ -1381,6 +1405,22 @@ onMounted(() => {
   border-radius: 8px;
   padding: 10px 20px;
   font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dialog-footer .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-footer .el-button--primary:hover {
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+}
+
+.dialog-footer .el-button:not(.el-button--primary):hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
 }
 
 /* 响应式设计 */

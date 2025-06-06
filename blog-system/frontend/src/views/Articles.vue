@@ -533,10 +533,6 @@ const goToArticleDetail = (id) => {
   router.push(`/blog/${id}`);
 };
 
-const goToArticleDetail = (id) => {
-  router.push(`/blog/${id}`);
-};
-
 // 跳转到首页
 const goHome = () => {
   router.push("/");
@@ -887,7 +883,7 @@ const formatDate = (dateString) => {
 }
 
 .search-btn:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
 }
 
