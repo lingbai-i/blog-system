@@ -27,6 +27,9 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
 
     // 根据名称模糊搜索
     Page<Tag> findByNameContainingIgnoreCaseOrderByNameAsc(String name, Pageable pageable);
+    
+    // 根据名称模糊搜索并按状态筛选
+    Page<Tag> findByNameContainingIgnoreCaseAndIsActiveOrderByNameAsc(String name, Boolean isActive, Pageable pageable);
 
     // 根据名称列表查找标签
     List<Tag> findByNameIn(List<String> names);

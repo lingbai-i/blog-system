@@ -48,11 +48,18 @@ public class DataInitializer {
         System.out.println("开始创建基础标签...");
 
         // 创建基础标签
-        createTagIfNotExists("Java", "Java编程语言相关内容");
-        createTagIfNotExists("Spring Boot", "Spring Boot框架相关内容");
-        createTagIfNotExists("前端开发", "前端开发技术相关内容");
-        createTagIfNotExists("数据库", "数据库相关技术内容");
-        createTagIfNotExists("算法", "算法和数据结构相关内容");
+        createTagIfNotExists("Java", "Java编程语言相关内容", true);
+        createTagIfNotExists("Spring Boot", "Spring Boot框架相关内容", true);
+        createTagIfNotExists("前端开发", "前端开发技术相关内容", true);
+        createTagIfNotExists("数据库", "数据库相关技术内容", true);
+        createTagIfNotExists("算法", "算法和数据结构相关内容", true);
+        
+        // 创建一些禁用状态的标签用于测试筛选功能
+        createTagIfNotExists("CSS", "CSS样式相关内容", false);
+        createTagIfNotExists("JavaScript", "JavaScript编程相关内容", false);
+        createTagIfNotExists("HTML", "HTML标记语言相关内容", false);
+        createTagIfNotExists("React", "React框架相关内容", false);
+        createTagIfNotExists("Vue.js", "Vue.js框架相关内容", false);
 
         System.out.println("开始创建基础分类...");
 
@@ -64,15 +71,16 @@ public class DataInitializer {
         System.out.println("基础标签和分类创建完成！");
     }
 
-    private void createTagIfNotExists(String name, String description) {
+    private void createTagIfNotExists(String name, String description, Boolean isActive) {
         try {
             if (!tagService.findByName(name).isPresent()) {
                 Tag tag = new Tag();
                 tag.setName(name);
                 tag.setSlug(name.toLowerCase().replace(" ", "-"));
                 tag.setDescription(description);
+                tag.setIsActive(isActive);
                 tagService.createTag(tag);
-                System.out.println("创建标签: " + name);
+                System.out.println("创建标签: " + name + " (状态: " + (isActive ? "激活" : "禁用") + ")");
             } else {
                 System.out.println("标签已存在: " + name);
             }

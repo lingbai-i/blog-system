@@ -8,53 +8,73 @@ import Register from '../views/Register.vue'
 import Search from '../views/Search.vue'
 import Articles from '../views/Articles.vue'
 
+// 路由配置
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home
+    component: () => import('../views/Home.vue')
   },
   {
     path: '/blog/:id',
     name: 'BlogDetail',
-    component: BlogDetail,
-    props: true
+    component: () => import('../views/BlogDetail.vue')
   },
   {
     path: '/admin',
     name: 'Admin',
-    component: Admin,
-    meta: { requiresAuth: true, requiresAdmin: true }
-  },
-  {
-    path: '/dashboard',
-    name: 'UserDashboard',
-    component: UserDashboard,
-    meta: { requiresAuth: true }
+    component: () => import('../views/Admin.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: { name: 'AdminBlogs' }
+      },
+      {
+        path: 'blogs',
+        name: 'AdminBlogs',
+        component: () => import('../views/Admin.vue'),
+        meta: { tab: 'blogs' }
+      },
+      {
+        path: 'categories',
+        name: 'AdminCategories',
+        component: () => import('../views/Admin.vue'),
+        meta: { tab: 'categories' }
+      },
+      {
+        path: 'tags',
+        name: 'AdminTags',
+        component: () => import('../views/Admin.vue'),
+        meta: { tab: 'tags' }
+      }
+    ]
   },
   {
     path: '/login',
     name: 'Login',
-    component: Login
+    component: () => import('../views/Login.vue')
   },
   {
     path: '/register',
     name: 'Register',
-    component: Register
+    component: () => import('../views/Register.vue')
+  },
+  {
+    path: '/dashboard',
+    name: 'UserDashboard',
+    component: () => import('../views/UserDashboard.vue'),
+    meta: { requiresAuth: true }
   },
   {
     path: '/search',
     name: 'Search',
-    component: Search
+    component: () => import('../views/Search.vue')
   },
   {
     path: '/articles',
     name: 'Articles',
-    component: Articles
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: '/'
+    component: () => import('../views/Articles.vue')
   }
 ]
 

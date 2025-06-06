@@ -72,7 +72,7 @@ public class TagController {
     @GetMapping
     public ResponseEntity<Page<Tag>> getAllTags(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "30") int size) {
         Page<Tag> tags = tagService.getAllTags(page, size);
         return ResponseEntity.ok(tags);
     }
@@ -82,7 +82,7 @@ public class TagController {
     public ResponseEntity<Page<Tag>> getTagsByStatus(
             @PathVariable Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "30") int size) {
         Page<Tag> tags = tagService.getTagsByStatus(isActive, page, size);
         return ResponseEntity.ok(tags);
     }
@@ -91,9 +91,10 @@ public class TagController {
     @GetMapping("/search")
     public ResponseEntity<Page<Tag>> searchTags(
             @RequestParam String keyword,
+            @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<Tag> tags = tagService.searchTags(keyword, page, size);
+            @RequestParam(defaultValue = "30") int size) {
+        Page<Tag> tags = tagService.searchTags(keyword, isActive, page, size);
         return ResponseEntity.ok(tags);
     }
 

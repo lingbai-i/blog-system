@@ -79,9 +79,15 @@ public class CategoryService {
     }
 
     // 搜索分类
-    public Page<Category> searchCategories(String keyword, int page, int size) {
+    public Page<Category> searchCategories(String keyword, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return categoryRepository.findByNameContainingIgnoreCaseOrderByNameAsc(keyword, pageable);
+        if (isActive != null) {
+            // 如果指定了状态，按关键词和状态搜索
+            return categoryRepository.findByNameContainingIgnoreCaseAndIsActiveOrderByNameAsc(keyword, isActive, pageable);
+        } else {
+            // 如果没有指定状态，只按关键词搜索
+            return categoryRepository.findByNameContainingIgnoreCaseOrderByNameAsc(keyword, pageable);
+        }
     }
 
     // 删除分类

@@ -81,9 +81,15 @@ public class TagService {
     }
 
     // 搜索标签
-    public Page<Tag> searchTags(String keyword, int page, int size) {
+    public Page<Tag> searchTags(String keyword, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return tagRepository.findByNameContainingIgnoreCaseOrderByNameAsc(keyword, pageable);
+        if (isActive != null) {
+            // 如果指定了状态，按关键词和状态搜索
+            return tagRepository.findByNameContainingIgnoreCaseAndIsActiveOrderByNameAsc(keyword, isActive, pageable);
+        } else {
+            // 如果没有指定状态，只按关键词搜索
+            return tagRepository.findByNameContainingIgnoreCaseOrderByNameAsc(keyword, pageable);
+        }
     }
 
     // 删除标签

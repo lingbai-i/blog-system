@@ -16,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -101,7 +103,7 @@ public class BlogService {
     // 获取所有已发布的博客（分页）
     public Page<Blog> findPublishedBlogs(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByIsPublishedTrueOrderByCreatedAtDesc(pageable);
+        return blogRepository.findByIsPublishedTrueOrderByCreatedAtAsc(pageable);
     }
 
     // 搜索博客
@@ -199,14 +201,14 @@ public class BlogService {
 
     // 获取所有博客（管理员）
     public Page<Blog> findAllBlogs(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
         return blogRepository.findAll(pageable);
     }
 
     // 获取草稿博客
     public Page<Blog> findDraftBlogs(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return blogRepository.findByIsPublishedFalseOrderByCreatedAtDesc(pageable);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
+        return blogRepository.findByIsPublishedFalseOrderByCreatedAtAsc(pageable);
     }
 
     // 获取博客总数
@@ -217,6 +219,21 @@ public class BlogService {
     // 获取已发布博客数量
     public long getPublishedBlogsCount() {
         return blogRepository.countByIsPublishedTrue();
+    }
+
+    // 获取总浏览量
+    public long getTotalViewsCount() {
+        return blogRepository.findAll().stream()
+                .mapToLong(blog -> blog.getViewCount() != null ? blog.getViewCount() : 0)
+                .sum();
+    }
+
+    // 获取今日发布的博客数量
+    public long getTodayPublishedCount() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
+        return blogRepository.countByIsPublishedTrueAndCreatedAtBetween(startOfDay, endOfDay);
     }
 
     // 更新博客状态

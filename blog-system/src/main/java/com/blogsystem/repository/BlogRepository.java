@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -15,6 +16,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     // 查找已发布的博客
     Page<Blog> findByIsPublishedTrueOrderByCreatedAtDesc(Pageable pageable);
+    
+    // 查找已发布的博客（升序）
+    Page<Blog> findByIsPublishedTrueOrderByCreatedAtAsc(Pageable pageable);
 
     // 根据标题搜索博客
     Page<Blog> findByTitleContainingIgnoreCaseAndIsPublishedTrue(String title, Pageable pageable);
@@ -47,6 +51,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     // 统计已发布博客数量
     long countByIsPublishedTrue();
 
+    // 统计指定时间范围内已发布的博客数量
+    long countByIsPublishedTrueAndCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
     // 管理员搜索所有博客（包括草稿）
     Page<Blog> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 
@@ -55,6 +62,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
 
     // 获取草稿博客
     Page<Blog> findByIsPublishedFalseOrderByCreatedAtDesc(Pageable pageable);
+    
+    // 获取草稿博客（升序）
+    Page<Blog> findByIsPublishedFalseOrderByCreatedAtAsc(Pageable pageable);
 
     // 多条件组合搜索博客
     @Query("SELECT DISTINCT b FROM Blog b LEFT JOIN b.tagEntities t WHERE " +

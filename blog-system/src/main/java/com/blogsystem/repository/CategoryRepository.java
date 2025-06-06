@@ -27,6 +27,9 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     // 根据名称模糊搜索
     Page<Category> findByNameContainingIgnoreCaseOrderByNameAsc(String name, Pageable pageable);
+    
+    // 根据名称模糊搜索并按状态筛选
+    Page<Category> findByNameContainingIgnoreCaseAndIsActiveOrderByNameAsc(String name, Boolean isActive, Pageable pageable);
 
     // 统计激活的分类数量
     long countByIsActiveTrue();

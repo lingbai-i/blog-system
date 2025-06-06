@@ -7,7 +7,7 @@
           <h1 class="logo">个人博客 - 用户后台</h1>
           <div class="user-info">
             <span class="welcome">欢迎，{{ userInfo.username }}</span>
-            <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
+            <el-button type="primary" plain @click="goToHomepage">返回首页</el-button>
           </div>
         </div>
       </div>
@@ -481,22 +481,9 @@ const updateProfile = async () => {
   }
 }
 
-// 退出登录
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '确认退出', {
-      type: 'warning'
-    })
-    
-    localStorage.removeItem('userToken')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('username')
-    
-    ElMessage.success('已退出登录')
-    router.push('/')
-  } catch (error) {
-    // 用户取消
-  }
+// 返回首页
+const goToHomepage = () => {
+  router.push('/')
 }
 
 // 格式化日期

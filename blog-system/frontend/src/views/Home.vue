@@ -630,9 +630,14 @@ const goToRegister = () => {
   router.push('/register')
 }
 
-// 跳转到管理后台
+// 跳转到管理系统
 const goToAdmin = () => {
-  router.push('/admin')
+  const userRole = localStorage.getItem('userRole')
+  if (userRole === 'admin') {
+    router.push('/admin')
+  } else {
+    router.push('/dashboard')
+  }
 }
 
 // 加载系统统计

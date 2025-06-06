@@ -104,9 +104,10 @@ public class CategoryController {
     @GetMapping("/search")
     public ResponseEntity<Page<Category>> searchCategories(
             @RequestParam String keyword,
+            @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<Category> categories = categoryService.searchCategories(keyword, page, size);
+        Page<Category> categories = categoryService.searchCategories(keyword, isActive, page, size);
         return ResponseEntity.ok(categories);
     }
 

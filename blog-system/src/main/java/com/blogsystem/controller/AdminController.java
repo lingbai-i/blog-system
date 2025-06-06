@@ -66,14 +66,20 @@ public class AdminController {
         long totalBlogs = blogService.getTotalBlogsCount();
         long publishedBlogs = blogService.getPublishedBlogsCount();
         long draftBlogs = totalBlogs - publishedBlogs;
+        long totalViews = blogService.getTotalViewsCount();
 
         // 获取用户统计
         long totalUsers = userService.getTotalUsersCount();
 
+        // 获取今日发布统计
+        long todayPosts = blogService.getTodayPublishedCount();
+
         stats.put("totalBlogs", totalBlogs);
         stats.put("publishedBlogs", publishedBlogs);
         stats.put("draftBlogs", draftBlogs);
+        stats.put("totalViews", totalViews);
         stats.put("totalUsers", totalUsers);
+        stats.put("todayPosts", todayPosts);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
