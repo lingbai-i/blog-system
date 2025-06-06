@@ -64,38 +64,7 @@ mvn clean package -DskipTests
 java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target\blog-system-0.0.1-SNAPSHOT.jar
 ```
 
-## 方案三：Docker 容器化部署
 
-### 前置条件
-
-- 已安装 Docker Desktop
-- 已安装 Docker Compose
-
-### 部署步骤
-
-1. **构建并启动所有服务**
-
-   ```cmd
-   docker-compose up -d
-   ```
-
-2. **查看服务状态**
-
-   ```cmd
-   docker-compose ps
-   docker-compose logs -f blog-backend
-   ```
-
-3. **停止服务**
-   ```cmd
-   docker-compose down
-   ```
-
-### Docker 服务包含
-
-- MySQL 8.0 数据库
-- Spring Boot 后端应用
-- Nginx 前端服务器（可选）
 
 ## 配置文件说明
 
@@ -106,11 +75,7 @@ java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target\blog-system-0.
 - 性能调优参数
 - 健康检查端点
 
-### Docker 环境配置 (`application-docker.yml`)
 
-- 容器化环境适配
-- 环境变量支持
-- 容器间网络通信
 
 ## 监控和维护
 
@@ -122,8 +87,7 @@ type logs\service-stdout.log
 type logs\service-stderr.log
 type logs\blog-system.log
 
-# Docker 日志
-docker-compose logs blog-backend
+
 ```
 
 ### 健康检查
@@ -187,7 +151,7 @@ nssm remove BlogSystemBackend confirm
 ## 推荐部署方案
 
 - **开发环境**：使用 `start-backend.bat` 脚本
-- **测试环境**：使用 Docker Compose
+- **测试环境**：使用直接运行方式
 - **生产环境**：使用 Windows 服务 + 生产配置
 
 选择适合您环境的部署方案，确保博客系统后端稳定持久运行！
