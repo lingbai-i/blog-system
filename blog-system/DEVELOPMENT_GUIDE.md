@@ -19,10 +19,12 @@
 
 ### 核心功能
 - 📝 文章管理（创建、编辑、删除、排序、点赞）
-- 👥 用户系统（注册、登录、权限管理）
+- 👥 用户系统（注册、登录、权限管理、头像上传）
 - 💬 评论系统（评论、回复、审核）
 - 🔍 搜索功能（多条件搜索和筛选）
 - 📊 数据统计（浏览量、点赞数等）
+- 📁 文件上传（用户头像上传和管理）
+- 👍 点赞系统（用户对文章的点赞功能）
 
 ## 🛠️ 技术栈
 
@@ -33,6 +35,8 @@
 - **ORM**: Spring Data JPA
 - **构建工具**: Maven 3.6+
 - **API 文档**: SpringDoc OpenAPI 3
+- **文件上传**: Spring Boot MultipartFile
+- **静态资源**: Spring Boot Static Resource Handler
 
 ### 前端技术
 - **框架**: Vue.js 3 (Composition API)
@@ -350,6 +354,72 @@ frontend/src/
    - 审查通过后合并到main分支
    - 删除功能分支
 
+### 文件上传功能开发指南
+
+#### 后端开发要点
+
+1. **配置文件上传参数**
+   ```properties
+   # application.properties
+   spring.servlet.multipart.max-file-size=2MB
+   spring.servlet.multipart.max-request-size=2MB
+   app.upload.dir=uploads/
+   ```
+
+2. **Controller层实现**
+   ```java
+   @PostMapping("/upload-avatar")
+   public ResponseEntity<?> uploadAvatar(
+       @RequestParam("file") MultipartFile file,
+       Authentication authentication) {
+       // 文件验证、保存和处理逻辑
+   }
+   ```
+
+3. **文件验证规则**
+   - 文件大小限制（2MB）
+   - 文件类型验证（jpg, png, gif）
+   - 文件名安全处理
+   - 重复文件处理
+
+4. **静态资源配置**
+   ```java
+   @Configuration
+   public class WebConfig implements WebMvcConfigurer {
+       @Override
+       public void addResourceHandlers(ResourceHandlerRegistry registry) {
+           registry.addResourceHandler("/uploads/**")
+                   .addResourceLocations("file:uploads/");
+       }
+   }
+   ```
+
+#### 前端开发要点
+
+1. **文件上传组件**
+   ```vue
+   <el-upload
+     :action="uploadUrl"
+     :headers="headers"
+     :before-upload="beforeUpload"
+     :on-success="handleSuccess">
+     <el-button type="primary">上传头像</el-button>
+   </el-upload>
+   ```
+
+2. **文件预览功能**
+   - 上传前预览
+   - 图片裁剪（可选）
+   - 进度显示
+
+#### 安全注意事项
+
+- 文件类型白名单验证
+- 文件大小限制
+- 文件名安全处理
+- 防止路径遍历攻击
+- 定期清理无效文件
+
 ### Bug修复流程
 
 1. **问题定位**
@@ -538,16 +608,51 @@ describe('BlogDetail.vue', () => {
 
 ## 🔧 常见问题
 
-### 开发环境问题
+### 常见问题
 
-**Q: 后端启动失败，提示数据库连接错误**
-A: 检查MySQL服务是否启动，确认数据库配置是否正确
+#### 开发环境问题
 
-**Q: 前端启动失败，提示依赖安装错误**
-A: 删除node_modules文件夹，重新执行npm install
+1. **数据库连接失败**
+   ```
+   解决方案：
+   - 检查MySQL服务是否启动
+   - 验证数据库连接配置
+   - 确认数据库用户权限
+   ```
 
-**Q: 跨域请求被阻止**
-A: 检查CorsConfig配置，确保允许前端域名访问
+2. **依赖安装失败**
+   ```bash
+   # 清理Maven缓存
+   mvn clean
+   mvn dependency:purge-local-repository
+   
+   # 清理npm缓存
+   npm cache clean --force
+   rm -rf node_modules
+   npm install
+   ```
+
+3. **跨域问题**
+   ```
+   解决方案：
+   - 检查后端CORS配置
+   - 确认前端API请求地址
+   - 验证代理配置
+   ```
+
+4. **文件上传问题**
+   ```
+   常见错误：
+   - 文件大小超限：检查spring.servlet.multipart配置
+   - 上传目录不存在：确保uploads目录已创建
+   - 权限不足：检查目录读写权限
+   - 文件类型不支持：验证文件类型白名单
+   
+   解决方案：
+   - 检查文件上传配置
+   - 验证目录权限
+   - 查看错误日志
+   ```
 
 ### 部署问题
 

@@ -89,13 +89,15 @@ mysql -u root -p blog < src/main/resources/data.sql
 
 初始化完成后，系统会创建以下默认账户：
 
-| 账户类型 | 用户名    | 密码       | 邮箱               | 说明       |
-| -------- | --------- | ---------- | ------------------ | ---------- |
-| 管理员   | admin     | admin123   | admin@blog.com     | 系统管理员 |
-| 普通用户 | blogger   | blogger123 | blogger@blog.com   | 博客作者   |
-| 普通用户 | reader    | reader123  | reader@blog.com    | 博客读者   |
-| 普通用户 | developer | dev123     | developer@blog.com | 开发者     |
-| 普通用户 | student   | student123 | student@blog.com   | 技术学生   |
+| 账户类型 | 用户名    | 密码       | 邮箱               | 说明       | 头像支持 |
+| -------- | --------- | ---------- | ------------------ | ---------- | -------- |
+| 管理员   | admin     | admin123   | admin@blog.com     | 系统管理员 | ✅       |
+| 普通用户 | blogger   | blogger123 | blogger@blog.com   | 博客作者   | ✅       |
+| 普通用户 | reader    | reader123  | reader@blog.com    | 博客读者   | ✅       |
+| 普通用户 | developer | dev123     | developer@blog.com | 开发者     | ✅       |
+| 普通用户 | student   | student123 | student@blog.com   | 技术学生   | ✅       |
+
+**注意**: 所有用户都支持头像上传功能，头像文件存储在 `uploads/avatars/` 目录下。
 
 ## 数据库表结构
 
@@ -106,6 +108,8 @@ mysql -u root -p blog < src/main/resources/data.sql
    - 存储用户基本信息
    - 支持管理员和普通用户
    - 包含头像、简介等扩展字段
+   - 新增 `avatar` 字段支持头像文件路径存储
+   - 支持头像上传和显示功能
 
 2. **blogs** - 博客文章表
 
@@ -135,7 +139,12 @@ mysql -u root -p blog < src/main/resources/data.sql
    - 动态系统配置
    - 支持不同数据类型
 
-7. **access_logs** - 访问日志表
+7. **user_likes** - 用户点赞表
+   - 记录用户对博客文章的点赞行为
+   - 防止重复点赞
+   - 支持点赞统计和分析
+
+8. **access_logs** - 访问日志表
    - 用户访问记录
    - 支持统计分析
 

@@ -74,10 +74,32 @@ java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target\blog-system-0.
 - 生产级别的日志配置
 - 性能调优参数
 - 健康检查端点
+- 文件上传配置和存储路径
+- 静态资源访问配置
 
 
 
 ## 监控和维护
+
+### 文件存储目录
+
+部署时需要确保以下目录存在且有写入权限：
+
+```bash
+# 创建上传目录
+mkdir uploads
+mkdir uploads/avatars
+
+# 设置权限（Linux/Unix）
+chmod 755 uploads
+chmod 755 uploads/avatars
+```
+
+**注意事项**：
+- 头像文件存储在 `uploads/avatars/` 目录
+- 确保应用有读写权限
+- 定期清理无效的上传文件
+- 建议设置文件大小限制（默认2MB）
 
 ### 日志查看
 
@@ -95,6 +117,7 @@ type logs\blog-system.log
 - 应用健康检查：http://localhost:8081/actuator/health
 - 应用信息：http://localhost:8081/actuator/info
 - 应用指标：http://localhost:8081/actuator/metrics
+- 监控文件存储空间使用情况
 
 ### 性能优化建议
 
