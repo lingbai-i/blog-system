@@ -60,6 +60,14 @@ public class Blog {
   @Column(length = 500)
   private String tags;
 
+  @Column(name = "images", columnDefinition = "TEXT")
+  private String images; // 存储图片URL列表，JSON格式
+
+  // 用户关联 - 博客作者
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id")
+  private User user;
+
   // 新的关系映射 - 添加@JsonIgnore防止循环引用
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")

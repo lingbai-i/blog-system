@@ -4,10 +4,10 @@
     <header class="header">
       <div class="container">
         <div class="header-content">
-          <h1 class="logo" @click="goHome">个人博客</h1>
+          <h1 class="logo" @click="goHome">文章详情</h1>
           <nav class="nav">
             <router-link to="/" class="nav-link">首页</router-link>
-            <router-link to="/admin" class="nav-link">管理后台</router-link>
+            <router-link to="/dashboard" class="nav-link">个人中心</router-link>
           </nav>
         </div>
       </div>
@@ -44,13 +44,18 @@
           <header class="article-header">
             <h1 class="article-title">{{ blog.title }}</h1>
             <div class="article-meta">
-              <span class="meta-item">
-                <el-icon><User /></el-icon>
-                {{ blog.authorName || blog.author }}
+              <span class="meta-item author-item">
+                <el-avatar 
+                  :size="32" 
+                  :src="blog.authorAvatar" 
+                  :icon="User"
+                  class="author-avatar"
+                />
+                <span class="author-name">{{ blog.authorName || blog.author }}</span>
               </span>
               <span class="meta-item">
                 <el-icon><Calendar /></el-icon>
-                {{ formatDate(blog.createdAt) }}
+                {{ formatDate(blog.publishedAt || blog.createdAt) }}
               </span>
               <span class="meta-item">
                 <el-icon><TrendCharts /></el-icon>
@@ -69,13 +74,13 @@
           <footer class="article-footer">
             <div class="article-actions">
               <el-button 
-                @click="likeBlog" 
+                @click="toggleLike" 
                 :icon="Star" 
                 :loading="liking"
-                type="primary"
-                :disabled="hasLiked"
+                :type="hasLiked ? 'danger' : 'primary'"
+                :disabled="!checkLoginStatus()"
               >
-                {{ hasLiked ? '已点赞' : '点赞' }} ({{ blog.likeCount || 0 }})
+                {{ hasLiked ? '取消点赞' : (checkLoginStatus() ? '点赞' : '登录后点赞') }} ({{ blog.likeCount || 0 }})
               </el-button>
               <el-button @click="shareBlog" :icon="Share">分享</el-button>
               <el-button @click="goBack">返回列表</el-button>
@@ -99,7 +104,7 @@
               <h3 class="related-title">{{ relatedBlog.title }}</h3>
               <p class="related-summary">{{ relatedBlog.summary || relatedBlog.content.substring(0, 100) + '...' }}</p>
               <div class="related-meta">
-                <span>{{ formatDate(relatedBlog.createdAt) }}</span>
+                <span>{{ formatDate(relatedBlog.publishedAt || relatedBlog.createdAt) }}</span>
               </div>
             </div>
           </div>
@@ -107,15 +112,32 @@
 
         <!-- 评论区域 -->
         <section v-if="blog" class="comment-section">
-          <CommentSection :blog-id="blog.id" />
+          <CommentSection :blog-id="blog.id" :blog-author-id="blog.userId" />
         </section>
       </div>
     </main>
+    
+    <!-- 图片预览对话框 -->
+    <el-dialog
+      v-model="imagePreviewVisible"
+      title="图片预览"
+      width="80%"
+      :show-close="true"
+      center
+    >
+      <div class="image-preview-container">
+        <img 
+          :src="currentPreviewImage" 
+          alt="预览图片" 
+          class="preview-image"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, User, Calendar, View, Share, Star, TrendCharts } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -133,16 +155,47 @@ const error = ref('')
 const liking = ref(false)
 const hasLiked = ref(false)
 
+// 图片预览相关
+const imagePreviewVisible = ref(false)
+const currentPreviewImage = ref('')
+
 // 计算属性
 const formattedContent = computed(() => {
   if (!blog.value?.content) return ''
+  
   // 简单的内容格式化，将换行转换为段落
-  return blog.value.content
+  let content = blog.value.content
     .split('\n')
     .filter(line => line.trim())
     .map(line => `<p>${line}</p>`)
     .join('')
+  
+  // 如果有图片，在内容后面添加图片
+  if (blog.value.images) {
+    try {
+      const images = typeof blog.value.images === 'string' 
+        ? JSON.parse(blog.value.images) 
+        : blog.value.images
+      
+      if (Array.isArray(images) && images.length > 0) {
+        const imageHtml = images.map((imageUrl, index) => 
+          `<div class="article-image" data-image-url="${imageUrl}" data-image-index="${index}"><img src="${imageUrl}" alt="文章图片" class="preview-thumbnail" style="cursor: pointer;"/></div>`
+        ).join('')
+        content += imageHtml
+      }
+    } catch (error) {
+      console.error('解析图片数据失败:', error)
+    }
+  }
+  
+  return content
 })
+
+// 处理图片点击事件
+const handleImageClick = (imageUrl) => {
+  currentPreviewImage.value = imageUrl
+  imagePreviewVisible.value = true
+}
 
 // 获取博客详情
 const fetchBlog = async () => {
@@ -161,24 +214,20 @@ const fetchBlog = async () => {
     // 后端直接返回Blog对象
     if (response.data && response.data.id) {
       blog.value = response.data
+      // 处理作者头像路径
+      if (blog.value.authorAvatar && !blog.value.authorAvatar.startsWith('http')) {
+        blog.value.authorAvatar = `http://localhost:8080${blog.value.authorAvatar}`
+      }
       // 检查点赞状态
       checkLikeStatus()
       // 获取相关文章
       fetchRelatedBlogs()
     } else {
-      // 如果API不可用，使用模拟数据
-      blog.value = getMockBlog(blogId)
-      // 检查点赞状态
-      checkLikeStatus()
-      relatedBlogs.value = getMockRelatedBlogs()
+      error.value = '博客不存在或已被删除'
     }
   } catch (err) {
     console.error('获取博客详情失败:', err)
-    // 使用模拟数据
-    blog.value = getMockBlog(blogId)
-    // 检查点赞状态
-    checkLikeStatus()
-    relatedBlogs.value = getMockRelatedBlogs()
+    error.value = '获取博客详情失败，请稍后重试'
   } finally {
     loading.value = false
   }
@@ -198,87 +247,11 @@ const fetchRelatedBlogs = async () => {
     }
   } catch (err) {
     console.error('获取相关文章失败:', err)
-    relatedBlogs.value = getMockRelatedBlogs()
+    relatedBlogs.value = []
   }
 }
 
-// 模拟数据
-const getMockBlog = (id) => {
-  const mockBlogs = {
-    '1': {
-      id: 1,
-      title: 'Vue 3 Composition API 深入解析',
-      content: `Vue 3 引入了 Composition API，这是一个全新的 API 设计，让我们能够更好地组织和复用代码逻辑。\n\nComposition API 的核心思想是将组件的逻辑按照功能进行组织，而不是按照选项类型（data、methods、computed等）进行组织。\n\n## 主要特性\n\n1. **更好的逻辑复用**：通过组合函数，我们可以轻松地在不同组件间共享逻辑。\n\n2. **更好的类型推导**：TypeScript 支持更加完善。\n\n3. **更灵活的代码组织**：相关的逻辑可以组织在一起。\n\n## 基本用法\n\n使用 setup() 函数作为组件的入口点，在这里定义响应式数据、计算属性、方法等。\n\n## 响应式 API\n\n- ref()：创建响应式引用\n- reactive()：创建响应式对象\n- computed()：创建计算属性\n- watch()：创建侦听器\n\nComposition API 为 Vue 3 带来了更强大的功能和更好的开发体验。`,
-      summary: 'Vue 3 引入了 Composition API，这是一个全新的 API 设计，让我们能够更好地组织和复用代码逻辑',
-      authorName: 'Admin',
-      createdAt: '2024-01-15T10:00:00',
-      viewCount: 1250,
-      likeCount: 25,
-      isPublished: true,
-      category: '前端开发',
-      tags: 'Vue3,JavaScript'
-    },
-    '2': {
-      id: 2,
-      title: 'Spring Boot 微服务架构实践',
-      content: `在现代软件开发中，微服务架构已经成为了主流的架构模式。Spring Boot 为我们提供了强大的工具来构建微服务应用。\n\n## 微服务架构的优势\n\n1. **独立部署**：每个服务可以独立部署和扩展\n2. **技术多样性**：不同服务可以使用不同的技术栈\n3. **故障隔离**：单个服务的故障不会影响整个系统\n4. **团队独立性**：不同团队可以独立开发不同的服务\n\n## Spring Boot 在微服务中的应用\n\nSpring Boot 提供了许多特性来简化微服务的开发：\n\n- **自动配置**：减少样板代码\n- **内嵌服务器**：简化部署\n- **健康检查**：监控服务状态\n- **配置管理**：外部化配置\n\n## 最佳实践\n\n1. 服务拆分要合理，避免过度拆分\n2. 使用 API 网关统一入口\n3. 实现服务发现和负载均衡\n4. 做好监控和日志管理\n5. 考虑数据一致性问题`,
-      summary: '在现代软件开发中，微服务架构已经成为了主流的架构模式。Spring Boot 为我们提供了强大的工具',
-      authorName: 'Admin',
-      createdAt: '2024-01-10T14:30:00',
-      viewCount: 980,
-      likeCount: 18,
-      isPublished: true,
-      category: '后端开发',
-      tags: 'Spring Boot,微服务'
-    },
-    '3': {
-      id: 3,
-      title: 'MySQL 性能优化技巧',
-      content: `数据库性能优化是后端开发中的重要技能。本文将介绍一些实用的 MySQL 性能优化技巧。\n\n## 索引优化\n\n索引是提高查询性能的最重要手段：\n\n1. **选择合适的索引类型**\n   - B-Tree 索引：最常用的索引类型\n   - Hash 索引：适用于等值查询\n   - 全文索引：适用于文本搜索\n\n2. **索引设计原则**\n   - 在经常查询的列上建立索引\n   - 避免在频繁更新的列上建立索引\n   - 复合索引的列顺序很重要\n\n## 查询优化\n\n1. **使用 EXPLAIN 分析查询计划**\n2. **避免 SELECT ***\n3. **合理使用 WHERE 条件**\n4. **优化 JOIN 操作**\n\n## 配置优化\n\n1. **调整缓冲池大小**\n2. **优化连接数设置**\n3. **配置查询缓存**\n\n## 架构优化\n\n1. **读写分离**\n2. **分库分表**\n3. **使用缓存**\n\n通过这些优化技巧，可以显著提升 MySQL 的性能。`,
-      summary: '数据库性能优化是后端开发中的重要技能。本文将介绍一些实用的 MySQL 性能优化技巧',
-      authorName: 'Admin',
-      createdAt: '2024-01-05T09:15:00',
-      viewCount: 756,
-      likeCount: 12,
-      isPublished: true,
-      category: '数据库',
-      tags: 'MySQL,性能优化'
-    }
-  }
-  
-  return mockBlogs[id] || null
-}
 
-const getMockRelatedBlogs = () => {
-    return [
-      {
-        id: 2,
-        title: 'Spring Boot 微服务架构实践',
-        content: '在现代软件开发中，微服务架构已经成为了主流的架构模式...',
-        summary: '在现代软件开发中，微服务架构已经成为了主流的架构模式',
-        authorName: 'Admin',
-        createdAt: '2024-01-10T14:30:00',
-        viewCount: 980,
-        likeCount: 18,
-        isPublished: true,
-        category: '后端开发',
-        tags: 'Spring Boot,微服务'
-      },
-      {
-        id: 3,
-        title: 'MySQL 性能优化技巧',
-        content: '数据库性能优化是后端开发中的重要技能...',
-        summary: '数据库性能优化是后端开发中的重要技能',
-        authorName: 'Admin',
-        createdAt: '2024-01-05T09:15:00',
-        viewCount: 756,
-        likeCount: 12,
-        isPublished: true,
-        category: '数据库',
-        tags: 'MySQL,性能优化'
-      }
-    ]
-  }
 
 // 导航方法
 const goHome = () => {
@@ -325,37 +298,162 @@ const goToBlogDetail = (id) => {
   })
 }
 
-// 点赞博客
-const likeBlog = async () => {
-  if (!blog.value || liking.value || hasLiked.value) return
+// 检查登录状态
+const checkLoginStatus = () => {
+  const userToken = localStorage.getItem('userToken')
+  const adminToken = localStorage.getItem('adminToken')
+  const token = userToken || adminToken
+  
+  if (!token) {
+    return false
+  }
+  
+  // 检查token格式和有效性
+  if (token.startsWith('token_')) {
+    // 真实token格式: token_userId_timestamp
+    const parts = token.split('_')
+    if (parts.length >= 3) {
+      const timestamp = parseInt(parts[2])
+      const currentTime = Date.now()
+      // 检查token是否过期（假设token有效期为24小时）
+      const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+      if (currentTime - timestamp > tokenExpiry) {
+        // token已过期，清理localStorage
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('adminToken')
+        return false
+      }
+      return true
+    }
+  }
+  
+  // 对于其他格式的token，暂时认为有效
+  // 在实际使用时会通过API调用验证
+  return true
+}
+
+// 切换点赞状态
+const toggleLike = async () => {
+  if (!blog.value || liking.value) return
+  
+  // 检查登录状态
+  if (!checkLoginStatus()) {
+    ElMessage.warning('请先登录后再操作')
+    router.push('/login')
+    return
+  }
+  
+  // 再次验证token有效性
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+  if (token && token.startsWith('token_')) {
+    const parts = token.split('_')
+    if (parts.length >= 3) {
+      const timestamp = parseInt(parts[2])
+      const currentTime = Date.now()
+      const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+      if (currentTime - timestamp > tokenExpiry) {
+        ElMessage.error('登录已过期，请重新登录')
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('adminToken')
+        router.push('/login')
+        return
+      }
+    }
+  }
   
   liking.value = true
   try {
-    const response = await axios.post(`/api/blogs/${blog.value.id}/like`)
-    if (response.data) {
-      blog.value.likeCount = response.data.likeCount
-      hasLiked.value = true
-      // 将点赞状态保存到本地存储
-      const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
-      if (!likedBlogs.includes(blog.value.id)) {
-        likedBlogs.push(blog.value.id)
-        localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+    // 获取用户token
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    if (!token) {
+      ElMessage.error('请先登录')
+      return
+    }
+    
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
-      ElMessage.success('点赞成功！')
+    }
+    
+    let response
+    if (hasLiked.value) {
+      // 取消点赞
+      response = await axios.delete(`/api/blogs/${blog.value.id}/like`, config)
+      if (response.data) {
+        blog.value.likeCount = response.data.likeCount
+        hasLiked.value = false
+        // 从本地存储中移除点赞状态
+        const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
+        const index = likedBlogs.indexOf(blog.value.id)
+        if (index > -1) {
+          likedBlogs.splice(index, 1)
+          localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+        }
+        ElMessage.success('取消点赞成功！')
+      }
+    } else {
+      // 点赞
+      response = await axios.post(`/api/blogs/${blog.value.id}/like`, {}, config)
+      if (response.data) {
+        blog.value.likeCount = response.data.likeCount
+        hasLiked.value = true
+        // 将点赞状态保存到本地存储
+        const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
+        if (!likedBlogs.includes(blog.value.id)) {
+          likedBlogs.push(blog.value.id)
+          localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+        }
+        ElMessage.success('点赞成功！')
+      }
     }
   } catch (error) {
-    console.error('点赞失败:', error)
-    ElMessage.error('点赞失败，请稍后重试')
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败，请稍后重试')
   } finally {
     liking.value = false
   }
 }
 
 // 检查是否已点赞
-const checkLikeStatus = () => {
+const checkLikeStatus = async () => {
   if (!blog.value) return
+  
+  // 首先检查localStorage（兼容旧数据）
   const likedBlogs = JSON.parse(localStorage.getItem('likedBlogs') || '[]')
-  hasLiked.value = likedBlogs.includes(blog.value.id)
+  const localLiked = likedBlogs.includes(blog.value.id)
+  
+  // 如果用户已登录，从后端获取真实的点赞状态
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+  if (token) {
+    try {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+      const response = await axios.get(`/api/blogs/${blog.value.id}/like-status`, config)
+      hasLiked.value = response.data.liked
+      
+      // 同步localStorage状态
+      if (response.data.liked && !localLiked) {
+        likedBlogs.push(blog.value.id)
+        localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+      } else if (!response.data.liked && localLiked) {
+        const index = likedBlogs.indexOf(blog.value.id)
+        if (index > -1) {
+          likedBlogs.splice(index, 1)
+          localStorage.setItem('likedBlogs', JSON.stringify(likedBlogs))
+        }
+      }
+    } catch (error) {
+      // 如果后端接口不存在或出错，使用localStorage状态
+      hasLiked.value = localLiked
+    }
+  } else {
+    // 未登录用户使用localStorage状态
+    hasLiked.value = localLiked
+  }
 }
 
 // 分享博客
@@ -400,6 +498,28 @@ watch(
 )
 
 // 组件挂载时获取数据
+// 添加图片点击事件监听器的函数
+const addImageClickListeners = () => {
+  nextTick(() => {
+    const articleImages = document.querySelectorAll('.article-content .preview-thumbnail')
+    console.log('找到图片数量:', articleImages.length)
+    articleImages.forEach(img => {
+      img.addEventListener('click', (e) => {
+        console.log('图片被点击:', e.target.src)
+        const imageUrl = e.target.src
+        handleImageClick(imageUrl)
+      })
+    })
+  })
+}
+
+// 监听blog数据变化，在数据加载完成后添加事件监听器
+watch(blog, (newBlog) => {
+  if (newBlog && newBlog.images) {
+    addImageClickListeners()
+  }
+}, { immediate: true })
+
 onMounted(() => {
   fetchBlog()
 })
@@ -515,6 +635,19 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.author-item {
+  gap: 0.75rem;
+}
+
+.author-avatar {
+  flex-shrink: 0;
+}
+
+.author-name {
+  font-weight: 500;
+  color: #333;
 }
 
 .article-content {
@@ -652,11 +785,61 @@ onMounted(() => {
   
   .article-actions {
     flex-direction: column;
-    align-items: center;
+    gap: 0.5rem;
   }
   
   .related-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 图片预览样式 */
+.image-preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: 80vh;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 文章内容中的图片样式优化 */
+.article-content :deep(.article-image) {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.article-content :deep(.article-image img) {
+  max-width: 30%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* 预览缩略图样式 */
+.article-content :deep(.preview-thumbnail) {
+  max-width: 300px;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px 0;
+}
+
+.article-content :deep(.article-image img:hover) {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>

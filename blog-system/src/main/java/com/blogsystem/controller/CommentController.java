@@ -194,18 +194,74 @@ public class CommentController {
         return ResponseEntity.notFound().build();
     }
 
-    // 删除评论
+    // 删除评论（带权限控制）
     @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteComment(@PathVariable Long id) {
+    public ResponseEntity<Object> deleteComment(
+        @PathVariable Long id, 
+        @RequestHeader(value = "Authorization", required = false) String authHeader) {
         Optional<Comment> commentOpt = commentService.findById(id);
-        if (commentOpt.isPresent()) {
-            commentService.deleteComment(id);
+        if (!commentOpt.isPresent()) {
             Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "评论已删除");
-            return ResponseEntity.ok(response);
+            response.put("success", false);
+            response.put("message", "评论不存在");
+            return ResponseEntity.status(404).body(response);
         }
-        return ResponseEntity.notFound().build();
+        
+        Comment comment = commentOpt.get();
+        
+        // 检查用户权限
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            try {
+                String[] parts = token.split("_");
+                if (parts.length >= 2) {
+                    Long userId = Long.parseLong(parts[1]);
+                    Optional<User> userOpt = userService.findById(userId);
+                    
+                    if (userOpt.isPresent()) {
+                        User currentUser = userOpt.get();
+                        
+                        // 检查权限：用户可以删除自己的评论，或者文章作者可以删除任何评论
+                        boolean canDelete = false;
+                        
+                        // 1. 用户删除自己的评论
+                        if (comment.getUser() != null && comment.getUser().getId().equals(userId)) {
+                            canDelete = true;
+                        }
+                        
+                        // 2. 文章作者删除任何评论
+                        // 通过authorName查找作者用户
+                        String blogAuthorName = comment.getBlog().getAuthorName();
+                        if (blogAuthorName != null && blogAuthorName.equals(currentUser.getUsername())) {
+                            canDelete = true;
+                        }
+                        
+                        if (canDelete) {
+                            commentService.deleteComment(id);
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("success", true);
+                            response.put("message", "评论已删除");
+                            return ResponseEntity.ok(response);
+                        } else {
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("success", false);
+                            response.put("message", "没有权限删除此评论");
+                            return ResponseEntity.status(403).body(response);
+                        }
+                    }
+                }
+            } catch (NumberFormatException e) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "无效的认证信息");
+                return ResponseEntity.status(401).body(response);
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", "需要登录才能删除评论");
+        return ResponseEntity.status(401).body(response);
     }
 
     // 获取博客的评论数量

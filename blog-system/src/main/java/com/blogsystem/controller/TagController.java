@@ -72,8 +72,9 @@ public class TagController {
     @GetMapping
     public ResponseEntity<Page<Tag>> getAllTags(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "30") int size) {
-        Page<Tag> tags = tagService.getAllTags(page, size);
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(required = false) String sort) {
+        Page<Tag> tags = tagService.getAllTags(page, size, sort);
         return ResponseEntity.ok(tags);
     }
 
@@ -82,8 +83,9 @@ public class TagController {
     public ResponseEntity<Page<Tag>> getTagsByStatus(
             @PathVariable Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "30") int size) {
-        Page<Tag> tags = tagService.getTagsByStatus(isActive, page, size);
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(required = false) String sort) {
+        Page<Tag> tags = tagService.getTagsByStatus(isActive, page, size, sort);
         return ResponseEntity.ok(tags);
     }
 
@@ -93,8 +95,9 @@ public class TagController {
             @RequestParam String keyword,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "30") int size) {
-        Page<Tag> tags = tagService.searchTags(keyword, isActive, page, size);
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(required = false) String sort) {
+        Page<Tag> tags = tagService.searchTags(keyword, isActive, page, size, sort);
         return ResponseEntity.ok(tags);
     }
 

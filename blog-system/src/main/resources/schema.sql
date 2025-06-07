@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS blogs (
     like_count INT DEFAULT 0 COMMENT '点赞次数',
     comment_count INT DEFAULT 0 COMMENT '评论次数',
     featured_image VARCHAR(255) COMMENT '特色图片URL',
+    images TEXT COMMENT '文章图片列表，JSON格式',
     meta_description VARCHAR(300) COMMENT 'SEO描述',
     meta_keywords VARCHAR(200) COMMENT 'SEO关键词',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -155,3 +156,17 @@ CREATE TABLE IF NOT EXISTS access_logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (blog_id) REFERENCES blogs(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='访问日志表';
+
+-- 用户点赞记录表
+CREATE TABLE IF NOT EXISTS user_likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    blog_id BIGINT NOT NULL COMMENT '博客ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+    UNIQUE KEY uk_user_blog (user_id, blog_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_blog_id (blog_id),
+    INDEX idx_created_at (created_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (blog_id) REFERENCES blogs(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户点赞记录表';

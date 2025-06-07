@@ -251,9 +251,8 @@ const fetchCategories = async () => {
   } catch (error) {
     console.error('获取分类列表失败:', error)
     ElMessage.error('获取分类列表失败，请稍后重试')
-    // 使用模拟数据
-    categories.value = getMockCategories()
-    total.value = categories.value.length
+    categories.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -369,44 +368,7 @@ const handleDialogClose = (done) => {
   done()
 }
 
-// 模拟数据
-const getMockCategories = () => {
-  return [
-    {
-      id: 1,
-      name: '技术分享',
-      slug: 'tech-sharing',
-      description: '分享各种技术知识和经验',
-      colorCode: '#409EFF',
-      isActive: true,
-      blogCount: 15,
-      createdAt: '2024-01-01T12:00:00',
-      updatedAt: '2024-01-15T14:30:00'
-    },
-    {
-      id: 2,
-      name: '学习笔记',
-      slug: 'study-notes',
-      description: '记录学习过程中的笔记和心得',
-      colorCode: '#67C23A',
-      isActive: true,
-      blogCount: 8,
-      createdAt: '2024-01-02T10:00:00',
-      updatedAt: '2024-01-10T16:20:00'
-    },
-    {
-      id: 3,
-      name: '项目实战',
-      slug: 'project-practice',
-      description: '实际项目开发中的经验和案例分析',
-      colorCode: '#E6A23C',
-      isActive: true,
-      blogCount: 5,
-      createdAt: '2024-01-03T09:30:00',
-      updatedAt: '2024-01-12T11:45:00'
-    }
-  ]
-}
+
 
 // 生命周期钩子
 onMounted(() => {

@@ -215,9 +215,11 @@ public class UserController {
                     if (userOpt.isPresent()) {
                         User user = userOpt.get();
                         Map<String, Object> profile = new HashMap<>();
+                        profile.put("id", user.getId());
                         profile.put("username", user.getUsername());
                         profile.put("email", user.getEmail() != null ? user.getEmail() : "");
                         profile.put("bio", user.getBio() != null ? user.getBio() : "");
+                        profile.put("avatar_url", user.getAvatar() != null ? user.getAvatar() : "");
                         profile.put("role", user.getIsAdmin() ? "admin" : "user");
                         profile.put("createdAt", user.getCreatedAt());
                         return ResponseEntity.ok(profile);
@@ -230,9 +232,11 @@ public class UserController {
 
         // 如果token无效或解析失败，返回默认信息
         Map<String, Object> profile = new HashMap<>();
+        profile.put("id", 0L);
         profile.put("username", "testuser");
         profile.put("email", "");
         profile.put("bio", "");
+        profile.put("avatar_url", "");
         profile.put("role", "user");
         profile.put("createdAt", "2024-01-01T00:00:00");
         return ResponseEntity.ok(profile);
@@ -240,18 +244,20 @@ public class UserController {
 
     // 更新当前用户资料
     @PutMapping("/profile")
-    public ResponseEntity<Object> updateCurrentUserProfile(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+    public ResponseEntity<Object> updateCurrentUserProfile(@RequestBody Map<String, String> request,
+            HttpServletRequest httpRequest) {
         try {
             String username = request.get("username");
             String email = request.get("email");
             String bio = request.get("bio");
+            String avatar = request.get("avatar");
 
             // 从Authorization头中获取token
             String authHeader = httpRequest.getHeader("Authorization");
             Long currentUserId = null;
-            
+
             System.out.println("[DEBUG] Authorization Header: " + authHeader);
-            
+
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.substring(7);
                 System.out.println("[DEBUG] Token: " + token);
@@ -267,7 +273,7 @@ public class UserController {
                     System.out.println("[DEBUG] Token格式错误: " + e.getMessage());
                 }
             }
-            
+
             if (currentUserId == null) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
@@ -283,7 +289,7 @@ public class UserController {
                     response.put("message", "用户名长度必须在2-20个字符之间");
                     return ResponseEntity.badRequest().body(response);
                 }
-                
+
                 // 检查用户名是否已存在（排除当前用户）
                 Optional<User> existingUser = userService.findByUsername(username.trim());
                 if (existingUser.isPresent() && !existingUser.get().getId().equals(currentUserId)) {
@@ -302,7 +308,7 @@ public class UserController {
                     response.put("message", "邮箱格式不正确");
                     return ResponseEntity.badRequest().body(response);
                 }
-                
+
                 // 检查邮箱是否已存在（排除当前用户）
                 Optional<User> existingEmailUser = userService.findByEmail(email.trim());
                 if (existingEmailUser.isPresent() && !existingEmailUser.get().getId().equals(currentUserId)) {
@@ -317,18 +323,33 @@ public class UserController {
             Optional<User> userOpt = userService.findById(currentUserId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                
+
                 // 更新用户名
                 if (username != null && !username.trim().isEmpty()) {
                     user.setUsername(username.trim());
                 }
-                
-                // 更新邮箱
-                user.setEmail(email != null && !email.trim().isEmpty() ? email.trim() : null);
-                
+
+                // 更新邮箱（只有当邮箱真正改变时才更新）
+                if (email != null && !email.trim().isEmpty()) {
+                    String newEmail = email.trim();
+                    if (!newEmail.equals(user.getEmail())) {
+                        user.setEmail(newEmail);
+                    }
+                } else if (email != null && email.trim().isEmpty()) {
+                    // 如果传入空字符串，则清空邮箱
+                    user.setEmail(null);
+                }
+
                 // 更新简介
-                user.setBio(bio != null && !bio.trim().isEmpty() ? bio.trim() : null);
-                
+                if (bio != null) {
+                    user.setBio(bio.trim().isEmpty() ? null : bio.trim());
+                }
+
+                // 更新头像
+                if (avatar != null) {
+                    user.setAvatar(avatar.trim().isEmpty() ? null : avatar.trim());
+                }
+
                 userService.updateUser(user);
 
                 Map<String, Object> response = new HashMap<>();

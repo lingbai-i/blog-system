@@ -2,9 +2,11 @@ package com.blogsystem.service;
 
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.User;
+import com.blogsystem.entity.UserLike;
 import com.blogsystem.entity.Category;
 import com.blogsystem.entity.Tag;
 import com.blogsystem.repository.BlogRepository;
+import com.blogsystem.repository.UserLikeRepository;
 import com.blogsystem.service.CategoryService;
 import com.blogsystem.service.TagService;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +30,23 @@ public class BlogService {
 
     private final BlogRepository blogRepository;
     private final UserService userService;
+    private final CommentService commentService;
     private final CategoryService categoryService;
     private final TagService tagService;
+    private final UserLikeRepository userLikeRepository;
 
     public BlogService(BlogRepository blogRepository,
             UserService userService,
+            @Lazy CommentService commentService,
             @Lazy CategoryService categoryService,
-            @Lazy TagService tagService) {
+            @Lazy TagService tagService,
+            UserLikeRepository userLikeRepository) {
         this.blogRepository = blogRepository;
         this.userService = userService;
+        this.commentService = commentService;
         this.categoryService = categoryService;
         this.tagService = tagService;
+        this.userLikeRepository = userLikeRepository;
     }
 
     // 创建博客
@@ -97,7 +105,15 @@ public class BlogService {
 
     // 删除博客
     public void deleteBlog(Long id) {
-        blogRepository.deleteById(id);
+        // 先查找博客
+        Optional<Blog> blogOpt = blogRepository.findById(id);
+        if (blogOpt.isPresent()) {
+            Blog blog = blogOpt.get();
+            // 先删除相关评论
+            commentService.deleteCommentsByBlog(blog);
+            // 再删除博客
+            blogRepository.deleteById(id);
+        }
     }
 
     // 获取所有已发布的博客（分页）
@@ -125,15 +141,16 @@ public class BlogService {
     }
 
     // 多条件组合搜索博客
-    public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page, int size) {
+    public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page,
+            int size) {
         // 默认按创建时间降序排序
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
+
         // 如果没有任何过滤条件，根据排序方式返回所有已发布的博客
-        if ((keyword == null || keyword.trim().isEmpty()) && 
-            (category == null || category.trim().isEmpty()) && 
-            (tag == null || tag.trim().isEmpty())) {
-            
+        if ((keyword == null || keyword.trim().isEmpty()) &&
+                (category == null || category.trim().isEmpty()) &&
+                (tag == null || tag.trim().isEmpty())) {
+
             // 根据排序方式使用不同的查询方法
             switch (sort) {
                 case "liked":
@@ -143,12 +160,12 @@ public class BlogService {
                 case "publishTime":
                 default:
                     // 创建按创建时间降序排序的Pageable
-                    Pageable publishTimePageable = PageRequest.of(page, size, 
-                        Sort.by(Sort.Direction.DESC, "createdAt"));
+                    Pageable publishTimePageable = PageRequest.of(page, size,
+                            Sort.by(Sort.Direction.DESC, "createdAt"));
                     return blogRepository.findBlogsWithFilters(null, null, null, publishTimePageable);
             }
         }
-        
+
         // 使用对应的排序查询方法
         switch (sort) {
             case "liked":
@@ -158,17 +175,16 @@ public class BlogService {
             case "publishTime":
             default:
                 // 创建按创建时间降序排序的Pageable
-                Pageable publishTimePageable = PageRequest.of(page, size, 
-                    Sort.by(Sort.Direction.DESC, "createdAt"));
+                Pageable publishTimePageable = PageRequest.of(page, size,
+                        Sort.by(Sort.Direction.DESC, "createdAt"));
                 return blogRepository.findBlogsWithFilters(
-                    keyword != null ? keyword.trim() : null,
-                    category != null ? category.trim() : null,
-                    tag != null ? tag.trim() : null,
-                    publishTimePageable
-                );
+                        keyword != null ? keyword.trim() : null,
+                        category != null ? category.trim() : null,
+                        tag != null ? tag.trim() : null,
+                        publishTimePageable);
         }
     }
-    
+
     private Pageable createSortedPageable(int page, int size, String sort) {
         Sort sortOrder;
         switch (sort) {
@@ -267,6 +283,7 @@ public class BlogService {
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
             blog.setIsPublished(true);
+            blog.setPublishedAt(LocalDateTime.now()); // 设置发布时间
             return blogRepository.save(blog);
         }
         return null;
@@ -284,12 +301,49 @@ public class BlogService {
     }
 
     // 点赞博客
-    public Blog likeBlog(Long id) {
+    public Blog likeBlog(Long id, Long userId) {
         Optional<Blog> blogOpt = blogRepository.findById(id);
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-            blog.setLikeCount(blog.getLikeCount() + 1);
-            return blogRepository.save(blog);
+
+            // 检查用户是否已经点赞过这篇博客
+            if (!userLikeRepository.existsByUserIdAndBlogId(userId, id)) {
+                // 增加博客点赞数
+                blog.setLikeCount(blog.getLikeCount() + 1);
+
+                // 创建用户点赞记录
+                UserLike userLike = new UserLike(userId, id);
+                userLikeRepository.save(userLike);
+
+                return blogRepository.save(blog);
+            }
+        }
+        return null;
+    }
+
+    // 取消点赞博客
+    public Blog unlikeBlog(Long id, Long userId) {
+        Optional<Blog> blogOpt = blogRepository.findById(id);
+        if (blogOpt.isPresent()) {
+            Blog blog = blogOpt.get();
+
+            // 检查用户是否已经点赞过这篇博客
+            Optional<UserLike> userLikeOpt = userLikeRepository.findByUserIdAndBlogId(userId, id);
+            if (userLikeOpt.isPresent()) {
+                // 减少博客点赞数
+                blog.setLikeCount(Math.max(0, blog.getLikeCount() - 1));
+
+                // 删除用户点赞记录
+                userLikeRepository.delete(userLikeOpt.get());
+
+                return blogRepository.save(blog);
+            } else if (blog.getLikeCount() > 0) {
+                // 如果用户没有点赞记录但博客点赞数大于0（兼容之前的数据）
+                // 减少博客点赞数
+                blog.setLikeCount(blog.getLikeCount() - 1);
+
+                return blogRepository.save(blog);
+            }
         }
         return null;
     }
@@ -308,5 +362,10 @@ public class BlogService {
     // 获取博客总数
     public long getTotalPublishedBlogs() {
         return blogRepository.countByIsPublishedTrue();
+    }
+
+    // 检查用户是否已点赞博客
+    public boolean hasUserLikedBlog(Long blogId, Long userId) {
+        return userLikeRepository.existsByUserIdAndBlogId(userId, blogId);
     }
 }

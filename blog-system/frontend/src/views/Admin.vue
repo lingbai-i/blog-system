@@ -11,7 +11,8 @@
             <el-icon><User /></el-icon>
             欢迎，{{ adminInfo.username }}
           </span>
-          <el-button @click="goToHomepage" :icon="SwitchButton">返回首页</el-button>
+          <el-button @click="goToHomepage">返回首页</el-button>
+          <el-button @click="handleLogout" type="danger" plain :icon="SwitchButton">注销登录</el-button>
         </div>
       </div>
     </header>
@@ -245,21 +246,28 @@ const blogRules = {
 const calculateStatsFromBlogs = async () => {
   try {
     // 获取所有博客数据用于统计
-    const response = await axios.get('/api/admin/blogs', {
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = {
       params: {
         page: 0,
         size: 1000, // 获取足够多的数据用于统计
         keyword: '',
         status: ''
-      }
-    })
+      },
+      ...(token ? {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      } : {})
+    }
+    
+    const response = await axios.get('/api/admin/blogs', config)
     
     let allBlogs = []
     if (response.data.success) {
       allBlogs = response.data.data.content || []
     } else {
-      // 如果API失败，使用模拟数据
-      allBlogs = getMockBlogs()
+      allBlogs = []
     }
     
     // 计算统计数据
@@ -281,11 +289,10 @@ const calculateStatsFromBlogs = async () => {
     }
   } catch (error) {
     console.error('计算统计数据失败:', error)
-    // 使用默认的模拟数据
-    const mockBlogs = getMockBlogs()
+    // 设置默认统计数据
     stats.value = {
-      totalBlogs: mockBlogs.length,
-      totalViews: mockBlogs.reduce((sum, blog) => sum + (blog.views || 0), 0),
+      totalBlogs: 0,
+      totalViews: 0,
       todayPosts: 0
     }
   }
@@ -307,7 +314,17 @@ const fetchBlogs = async () => {
     // 始终只显示已发布的文章
     params.status = 'published'
     
-    const response = await axios.get('/api/admin/blogs', { params })
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = {
+      params,
+      ...(token ? {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      } : {})
+    }
+    
+    const response = await axios.get('/api/admin/blogs', config)
     if (response.data.success && response.data.data) {
       blogs.value = response.data.data.content
       total.value = response.data.data.totalElements
@@ -361,10 +378,12 @@ const saveBlog = async () => {
       total.value += 1
       
       ElMessage.success('文章发布成功')
+      fetchStats() // 刷新统计数据
     } else {
       ElMessage.success('文章发布成功')
       // 如果没有返回数据，则重新获取列表
       fetchBlogs()
+      fetchStats() // 刷新统计数据
     }
     
     dialogVisible.value = false
@@ -398,9 +417,17 @@ const confirmDelete = (id) => {
 // 删除博客
 const deleteBlog = async (id) => {
   try {
-    await axios.delete(`/api/admin/blogs/${id}`)
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
+    await axios.delete(`/api/admin/blogs/${id}`, config)
     ElMessage.success('博客删除成功')
     fetchBlogs()
+    fetchStats() // 刷新统计数据
   } catch (error) {
     console.error('删除博客失败:', error)
     ElMessage.error('删除博客失败')
@@ -465,6 +492,33 @@ watch(activeTab, (newTab) => {
 // 返回首页
 const goToHomepage = () => {
   router.push('/')
+}
+
+// 注销登录
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('确定要注销登录吗？', '确认注销', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    })
+    
+    // 清除本地存储的登录信息
+    localStorage.removeItem('adminToken')
+    localStorage.removeItem('userToken')
+    localStorage.removeItem('userRole')
+    localStorage.removeItem('username')
+    
+    ElMessage.success('注销成功')
+    
+    // 跳转到登录页面
+    router.push('/login')
+  } catch (error) {
+    // 用户取消注销
+    if (error !== 'cancel') {
+      console.error('注销失败:', error)
+    }
+  }
 }
 </script>
 

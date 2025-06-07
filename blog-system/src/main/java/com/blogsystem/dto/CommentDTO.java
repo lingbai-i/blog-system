@@ -1,6 +1,7 @@
 package com.blogsystem.dto;
 
 import com.blogsystem.entity.Comment;
+import com.blogsystem.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,9 @@ public class CommentDTO {
     private Long blogId;
     private String authorName;
     private String authorEmail;
+    private String authorAvatar;
+    private Long userId; // 用户ID
+    private String userAccount; // 用户账号用于权限检查
     private String content;
     private LocalDateTime createdAt;
     private Boolean isApproved;
@@ -30,6 +34,9 @@ public class CommentDTO {
         dto.setBlogId(comment.getBlog() != null ? comment.getBlog().getId() : null);
         dto.setAuthorName(comment.getAuthorName());
         dto.setAuthorEmail(comment.getAuthorEmail());
+        dto.setAuthorAvatar(comment.getUser() != null ? comment.getUser().getAvatar() : null);
+        dto.setUserId(comment.getUser() != null ? comment.getUser().getId() : null);
+        dto.setUserAccount(comment.getUser() != null ? comment.getUser().getAccount() : null);
         dto.setContent(comment.getContent());
         dto.setCreatedAt(comment.getCreatedAt());
         dto.setIsApproved(comment.getIsApproved());

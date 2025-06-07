@@ -9,6 +9,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Optional;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,9 +101,13 @@ public class AdminController {
 
         // 简单的管理员验证
         if ("admin".equals(username) && "admin123".equals(password)) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", "admin_token_" + System.currentTimeMillis());
+            data.put("username", username);
+            
             response.put("success", true);
             response.put("message", "登录成功");
-            response.put("token", "admin_token_" + System.currentTimeMillis());
+            response.put("data", data);
         } else {
             response.put("success", false);
             response.put("message", "用户名或密码错误");
@@ -111,16 +118,67 @@ public class AdminController {
 
     // 删除博客
     @DeleteMapping("/blogs/{id}")
-    public ResponseEntity<Map<String, Object>> deleteBlog(@PathVariable Long id) {
+    public ResponseEntity<Map<String, Object>> deleteBlog(@PathVariable Long id, HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
 
+        // 验证管理员权限
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+        
+        token = token.substring(7);
         try {
-            blogService.deleteBlog(id);
-            response.put("success", true);
-            response.put("message", "博客删除成功");
+            // 检查是否为管理员token格式
+            if (token.startsWith("admin_token_")) {
+                // 管理员token格式：admin_token_timestamp
+                // 直接执行删除操作，无需验证用户表
+                blogService.deleteBlog(id);
+                response.put("success", true);
+                response.put("message", "博客删除成功");
+            } else {
+                // 解析普通用户token获取用户信息
+                String[] parts = token.split("_");
+                if (parts.length >= 2) {
+                    Long userId = Long.parseLong(parts[1]);
+                    Optional<User> userOpt = userService.findById(userId);
+                    
+                    if (userOpt.isPresent()) {
+                        User user = userOpt.get();
+                        String userRole = user.getIsAdmin() ? "admin" : "user";
+                        
+                        // 检查是否为管理员
+                        if (!"admin".equals(userRole)) {
+                            response.put("success", false);
+                            response.put("message", "权限不足，只有管理员可以删除博客");
+                            return ResponseEntity.status(403).body(response);
+                        }
+                        
+                        // 执行删除操作
+                        blogService.deleteBlog(id);
+                        response.put("success", true);
+                        response.put("message", "博客删除成功");
+                    } else {
+                        response.put("success", false);
+                        response.put("message", "用户不存在");
+                        return ResponseEntity.status(401).body(response);
+                    }
+                } else {
+                    response.put("success", false);
+                    response.put("message", "token格式错误");
+                    return ResponseEntity.status(401).body(response);
+                }
+            }
+        } catch (NumberFormatException e) {
+            response.put("success", false);
+            response.put("message", "token解析错误");
+            return ResponseEntity.status(401).body(response);
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "删除失败: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
 
         return ResponseEntity.ok(response);

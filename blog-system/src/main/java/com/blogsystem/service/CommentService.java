@@ -59,9 +59,27 @@ public class CommentService {
         return commentRepository.findById(id);
     }
 
-    // 删除评论
+    // 删除评论（级联删除子评论）
     public void deleteComment(Long id) {
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("评论不存在"));
+        
+        // 先删除所有子评论
+        deleteRepliesRecursively(comment);
+        
+        // 再删除父评论
         commentRepository.deleteById(id);
+    }
+    
+    // 递归删除回复
+    private void deleteRepliesRecursively(Comment parent) {
+        List<Comment> replies = commentRepository.findByParentOrderByCreatedAtAsc(parent);
+        for (Comment reply : replies) {
+            // 递归删除子回复
+            deleteRepliesRecursively(reply);
+            // 删除当前回复
+            commentRepository.deleteById(reply.getId());
+        }
     }
 
     // 获取博客的所有已审核评论
@@ -128,5 +146,10 @@ public class CommentService {
         for (Long id : commentIds) {
             deleteComment(id);
         }
+    }
+
+    // 根据博客删除所有相关评论
+    public void deleteCommentsByBlog(Blog blog) {
+        commentRepository.deleteByBlog(blog);
     }
 }

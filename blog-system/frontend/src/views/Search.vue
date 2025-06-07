@@ -32,6 +32,10 @@
             @click="goToBlogDetail(blog.id)"
           >
             <div class="blog-content">
+              <!-- 文章图片 -->
+              <div v-if="getFirstImage(blog)" class="blog-image">
+                <img :src="getFirstImage(blog)" :alt="blog.title" />
+              </div>
               <h3 class="blog-title">{{ blog.title }}</h3>
               <p class="blog-summary">
                 {{ blog.summary || blog.content?.substring(0, 150) + "..." }}
@@ -43,7 +47,7 @@
                 </span>
                 <span class="date">
                   <el-icon><Calendar /></el-icon>
-                  {{ formatDate(blog.createdAt) }}
+                  {{ formatDate(blog.publishedAt || blog.createdAt) }}
                 </span>
                 <span class="category" v-if="blog.category">
                   <el-icon><Folder /></el-icon>
@@ -130,6 +134,25 @@ onMounted(() => {
   });
 });
 
+// 获取文章的第一张图片
+const getFirstImage = (blog) => {
+  if (!blog.images) return null;
+  
+  try {
+    const images = typeof blog.images === 'string' 
+      ? JSON.parse(blog.images) 
+      : blog.images;
+    
+    if (Array.isArray(images) && images.length > 0) {
+      return images[0];
+    }
+  } catch (error) {
+    console.error('解析图片数据失败:', error);
+  }
+  
+  return null;
+};
+
 
 </script>
 
@@ -148,6 +171,23 @@ onMounted(() => {
   border-radius: 15px;
   padding: 3rem;
   text-align: center;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.blog-image {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.blog-image img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.blog-image:hover img {
+  transform: scale(1.05);
 }
 </style>

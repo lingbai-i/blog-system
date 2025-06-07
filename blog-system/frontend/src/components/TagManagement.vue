@@ -26,25 +26,29 @@
         </div>
         
         <div class="filter-group">
-          <el-select 
-            v-model="statusFilter" 
-            placeholder="状态筛选" 
-            clearable 
-            @change="fetchTags"
-            class="status-filter"
+          <el-select
+            v-model="statusFilter"
+            placeholder="状态筛选"
+            clearable
+            @change="searchTags"
+            class="filter-select"
           >
             <el-option label="全部状态" value="" />
             <el-option label="激活" value="true" />
             <el-option label="禁用" value="false" />
           </el-select>
           
-          <el-button 
-            @click="resetFilters" 
-            :icon="Refresh"
-            class="reset-btn"
+          <el-select
+            v-model="sortBy"
+            placeholder="排序方式"
+            @change="searchTags"
+            class="filter-select"
           >
-            重置
-          </el-button>
+            <el-option label="默认排序" value="" />
+            <el-option label="使用频率（高到低）" value="usage_desc" />
+            <el-option label="使用频率（低到高）" value="usage_asc" />
+            <el-option label="创建时间" value="created_desc" />
+          </el-select>
         </div>
       </div>
     </div>
@@ -72,6 +76,20 @@
         <el-table-column prop="blogCount" label="文章数" width="100">
           <template #default="{ row }">
             {{ row.blogCount || 0 }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="usageFrequency" label="使用频率" width="120" sortable>
+          <template #default="{ row }">
+            <div class="usage-frequency">
+              <el-progress 
+                :percentage="getUsagePercentage(row.blogCount)" 
+                :stroke-width="8"
+                :show-text="false"
+                :color="getUsageColor(row.blogCount)"
+              />
+              <span class="usage-text">{{ row.blogCount || 0 }}次</span>
+            </div>
           </template>
         </el-table-column>
         
@@ -188,9 +206,11 @@ const tags = ref([])
 const loading = ref(false)
 const searchKeyword = ref('')
 const statusFilter = ref('')
+const sortBy = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const maxUsageCount = ref(0)
 
 // 对话框相关
 const dialogVisible = ref(false)
@@ -229,6 +249,11 @@ const fetchTags = async () => {
       size: pageSize.value
     }
     
+    // 添加排序参数
+    if (sortBy.value) {
+      params.sort = sortBy.value
+    }
+    
     // 优先级：搜索关键词 > 状态筛选 > 全部
     if (searchKeyword.value) {
       // 如果有搜索关键词，使用搜索接口
@@ -248,12 +273,17 @@ const fetchTags = async () => {
     const response = await axios.get(url, { params })
     tags.value = response.data.content
     total.value = response.data.totalElements
+    
+    // 计算最大使用次数，用于进度条显示
+    if (tags.value.length > 0) {
+      maxUsageCount.value = Math.max(...tags.value.map(tag => tag.blogCount || 0))
+    }
   } catch (error) {
     console.error('获取标签列表失败:', error)
     ElMessage.error('获取标签列表失败，请稍后重试')
-    // 使用模拟数据
-    tags.value = getMockTags()
-    total.value = tags.value.length
+    tags.value = []
+    total.value = 0
+    maxUsageCount.value = 0
   } finally {
     loading.value = false
   }
@@ -368,65 +398,19 @@ const handleDialogClose = (done) => {
   done()
 }
 
-// 模拟数据
-const getMockTags = () => {
-  return [
-    {
-      id: 1,
-      name: 'Java',
-      slug: 'java',
-      description: 'Java编程语言相关内容',
-      colorCode: '#F44336',
-      isActive: true,
-      blogCount: 12,
-      createdAt: '2024-01-01T12:00:00',
-      updatedAt: '2024-01-15T14:30:00'
-    },
-    {
-      id: 2,
-      name: 'Spring Boot',
-      slug: 'spring-boot',
-      description: 'Spring Boot框架相关内容',
-      colorCode: '#4CAF50',
-      isActive: true,
-      blogCount: 8,
-      createdAt: '2024-01-02T10:00:00',
-      updatedAt: '2024-01-10T16:20:00'
-    },
-    {
-      id: 3,
-      name: '前端开发',
-      slug: 'frontend',
-      description: '前端开发技术和框架',
-      colorCode: '#2196F3',
-      isActive: true,
-      blogCount: 6,
-      createdAt: '2024-01-03T09:30:00',
-      updatedAt: '2024-01-12T11:45:00'
-    },
-    {
-      id: 4,
-      name: '数据库',
-      slug: 'database',
-      description: '数据库技术和优化',
-      colorCode: '#FF9800',
-      isActive: true,
-      blogCount: 4,
-      createdAt: '2024-01-04T14:20:00',
-      updatedAt: '2024-01-14T09:15:00'
-    },
-    {
-      id: 5,
-      name: '算法',
-      slug: 'algorithm',
-      description: '算法和数据结构',
-      colorCode: '#9C27B0',
-      isActive: true,
-      blogCount: 3,
-      createdAt: '2024-01-05T16:45:00',
-      updatedAt: '2024-01-13T13:30:00'
-    }
-  ]
+// 计算使用频率百分比
+const getUsagePercentage = (count) => {
+  if (!maxUsageCount.value || maxUsageCount.value === 0) return 0
+  return Math.round((count || 0) / maxUsageCount.value * 100)
+}
+
+// 根据使用频率获取颜色
+const getUsageColor = (count) => {
+  const percentage = getUsagePercentage(count)
+  if (percentage >= 80) return '#67c23a' // 绿色 - 高频使用
+  if (percentage >= 50) return '#e6a23c' // 橙色 - 中频使用
+  if (percentage >= 20) return '#409eff' // 蓝色 - 低频使用
+  return '#f56c6c' // 红色 - 很少使用
 }
 
 // 生命周期钩子
@@ -536,5 +520,28 @@ onMounted(() => {
   margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
+}
+
+.usage-frequency {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-text {
+  font-size: 12px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.filter-select {
+  min-width: 120px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 </style>

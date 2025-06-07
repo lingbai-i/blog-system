@@ -193,41 +193,52 @@
             @click="goToArticleDetail(article.id)"
           >
             <div class="article-content">
-              <h3 class="article-title">{{ article.title }}</h3>
-              <p class="article-summary">
-                {{ article.summary || article.content?.substring(0, 150) + "..." }}
-              </p>
-              <div class="article-meta">
-                <span class="author">
-                  <el-icon><User /></el-icon>
-                  {{ article.authorName }}
-                </span>
-                <span class="date">
-                  <el-icon><Calendar /></el-icon>
-                  {{ formatDate(article.createdAt) }}
-                </span>
-                <span class="category" v-if="article.category">
-                  <el-icon><Folder /></el-icon>
-                  {{ article.category }}
-                </span>
-                <span class="views">
-                  <el-icon><TrendCharts /></el-icon>
-                  热度 {{ article.viewCount || 0 }}
-                </span>
-                <span class="likes">
-                  <el-icon><Star /></el-icon>
-                  {{ article.likeCount || 0 }} 点赞
-                </span>
+              <!-- 左侧文本内容 -->
+              <div class="article-text">
+                <h3 class="article-title">{{ article.title }}</h3>
+                <p class="article-summary">
+                  {{ article.summary || article.content?.substring(0, 150) + "..." }}
+                </p>
+                <div class="article-meta">
+                  <span class="author">
+                    <el-icon><User /></el-icon>
+                    {{ article.authorName }}
+                  </span>
+                  <span class="date">
+                    <el-icon><Calendar /></el-icon>
+                    {{ formatDate(article.publishedAt || article.createdAt) }}
+                  </span>
+                  <span class="category" v-if="article.category">
+                    <el-icon><Folder /></el-icon>
+                    {{ article.category }}
+                  </span>
+                  <span class="views">
+                    <el-icon><TrendCharts /></el-icon>
+                    热度 {{ article.viewCount || 0 }}
+                  </span>
+                  <span class="likes">
+                    <el-icon><Star /></el-icon>
+                    {{ article.likeCount || 0 }} 点赞
+                  </span>
+                  <span class="comments">
+                    <el-icon><ChatDotRound /></el-icon>
+                    {{ article.commentCount || 0 }} 评论
+                  </span>
+                </div>
+                <div class="article-tags" v-if="article.tags">
+                  <el-tag
+                    v-for="tag in article.tags.split(',')"
+                    :key="tag"
+                    size="small"
+                    class="tag"
+                  >
+                    {{ tag.trim() }}
+                  </el-tag>
+                </div>
               </div>
-              <div class="article-tags" v-if="article.tags">
-                <el-tag
-                  v-for="tag in article.tags.split(',')"
-                  :key="tag"
-                  size="small"
-                  class="tag"
-                >
-                  {{ tag.trim() }}
-                </el-tag>
+              <!-- 右侧文章图片 -->
+              <div v-if="getFirstImage(article)" class="article-image">
+                <img :src="getFirstImage(article)" :alt="article.title" />
               </div>
             </div>
           </div>
@@ -287,6 +298,7 @@ import {
   View,
   Star,
   Delete,
+  ChatDotRound,
 } from "@element-plus/icons-vue";
 
 const router = useRouter();
@@ -442,6 +454,9 @@ const performSearch = async () => {
     if (response.data && response.data.content) {
       articles.value = response.data.content;
       total.value = response.data.totalElements;
+      
+      // 为每个文章获取评论数量
+      await fetchCommentCounts();
     } else {
       articles.value = [];
       total.value = 0;
@@ -495,7 +510,23 @@ const searchSuggestion = (suggestion) => {
   performSearch();
 };
 
-
+// 获取评论数量
+const fetchCommentCounts = async () => {
+  try {
+    const promises = articles.value.map(async (article) => {
+      try {
+        const response = await axios.get(`/api/comments/blog/${article.id}/count`);
+        article.commentCount = response.data.count || 0;
+      } catch (error) {
+        console.error(`获取文章 ${article.id} 评论数量失败:`, error);
+        article.commentCount = 0;
+      }
+    });
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('获取评论数量失败:', error);
+  }
+};
 
 // 搜索处理
 const handleSearch = () => {
@@ -543,6 +574,25 @@ const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
   return date.toLocaleDateString("zh-CN");
+};
+
+// 获取文章的第一张图片
+const getFirstImage = (article) => {
+  if (!article.images) return null;
+  
+  try {
+    const images = typeof article.images === 'string' 
+      ? JSON.parse(article.images) 
+      : article.images;
+    
+    if (Array.isArray(images) && images.length > 0) {
+      return images[0];
+    }
+  } catch (error) {
+    console.error('解析图片数据失败:', error);
+  }
+  
+  return null;
 };
 </script>
 
@@ -652,10 +702,13 @@ const formatDate = (dateString) => {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
 }
 
 .article-card:hover {
@@ -664,12 +717,31 @@ const formatDate = (dateString) => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+.article-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  flex: 1;
+  overflow: hidden;
+}
+
+.article-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .article-title {
   color: white;
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1rem 0;
   line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 4.2rem;
 }
 
 .article-summary {
@@ -677,6 +749,12 @@ const formatDate = (dateString) => {
   font-size: 1rem;
   line-height: 1.6;
   margin: 0 0 1.5rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 4.8rem;
 }
 
 .article-meta {
@@ -696,6 +774,33 @@ const formatDate = (dateString) => {
 
 .article-meta .el-icon {
   font-size: 1rem;
+}
+
+.article-image {
+  flex: 0 0 150px;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 120px;
+  align-self: center;
+}
+
+.article-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.article-image:hover img {
+  transform: scale(1.05);
+}
+
+.comments {
+  color: rgba(16, 185, 129, 0.9) !important;
+}
+
+.comments:hover {
+  color: rgba(5, 150, 105, 1) !important;
 }
 
 
@@ -1007,11 +1112,32 @@ const formatDate = (dateString) => {
   }
 
   .article-card {
-    padding: 1.5rem;
+    padding: 1rem;
+    min-height: 200px;
+  }
+
+  .article-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .article-image {
+    flex: none;
+    width: 100%;
+    height: 130px;
+    align-self: stretch;
   }
 
   .article-title {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+  }
+
+  .article-meta {
+    gap: 1rem;
+  }
+
+  .article-meta span {
+    font-size: 0.8rem;
   }
 }
 </style>

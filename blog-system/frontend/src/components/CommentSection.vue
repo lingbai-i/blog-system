@@ -13,7 +13,21 @@
         <template #header>
           <span>发表评论</span>
         </template>
-        <el-form :model="commentForm" :rules="commentRules" ref="commentFormRef">
+        <div v-if="!checkLoginStatus()" class="login-prompt">
+          <el-alert
+            title="请先登录后再发表评论"
+            type="info"
+            :closable="false"
+            show-icon
+          >
+            <template #default>
+              <div style="margin-top: 10px;">
+                <el-button type="primary" size="small" @click="goToLogin">去登录</el-button>
+              </div>
+            </template>
+          </el-alert>
+        </div>
+        <el-form v-else :model="commentForm" :rules="commentRules" ref="commentFormRef">
           <el-form-item prop="content">
             <el-input
               v-model="commentForm.content"
@@ -58,7 +72,12 @@
           <div class="comment-content">
             <div class="comment-header-info">
               <div class="comment-author">
-                <el-avatar :size="40" :icon="UserFilled" />
+                <el-avatar 
+                  :size="40" 
+                  :src="comment.authorAvatar" 
+                  :icon="UserFilled" 
+                  class="comment-avatar"
+                />
                 <div class="author-info">
                   <span class="author-name">{{ comment.authorName }}</span>
                   <span class="comment-time">{{ formatDate(comment.createdAt) }}</span>
@@ -71,8 +90,19 @@
                   size="small"
                   @click="showReplyForm(comment.id)"
                   :icon="ChatLineRound"
+                  :disabled="!checkLoginStatus()"
                 >
-                  回复
+                  {{ checkLoginStatus() ? '回复' : '登录后回复' }}
+                </el-button>
+                <el-button
+                  v-if="canDeleteComment(comment)"
+                  text
+                  type="danger"
+                  size="small"
+                  @click="deleteComment(comment.id)"
+                  :icon="Delete"
+                >
+                  删除
                 </el-button>
               </div>
             </div>
@@ -120,13 +150,30 @@
               >
                 <div class="reply-content">
                   <div class="reply-header">
-                    <el-avatar :size="32" :icon="UserFilled" />
+                    <el-avatar 
+                      :size="32" 
+                      :src="reply.authorAvatar" 
+                      :icon="UserFilled" 
+                      class="reply-avatar"
+                    />
                     <div class="reply-author-info">
                       <span class="reply-author-name">{{ reply.authorName }}</span>
                       <span class="reply-time">{{ formatDate(reply.createdAt) }}</span>
                     </div>
                   </div>
                   <div class="reply-text">{{ reply.content }}</div>
+                  <div class="reply-actions">
+                    <el-button
+                      v-if="canDeleteComment(reply)"
+                      text
+                      type="danger"
+                      size="small"
+                      @click="deleteComment(reply.id)"
+                      :icon="Delete"
+                    >
+                      删除
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -143,9 +190,10 @@ import {
   ChatDotRound,
   EditPen,
   UserFilled,
-  ChatLineRound
+  ChatLineRound,
+  Delete
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
 // Props
@@ -153,6 +201,10 @@ const props = defineProps({
   blogId: {
     type: [String, Number],
     required: true
+  },
+  blogAuthorId: {
+    type: Number,
+    required: false
   }
 })
 
@@ -182,14 +234,14 @@ const replyForm = ref({
 const commentRules = {
   content: [
     { required: true, message: '请输入评论内容', trigger: 'blur' },
-    { min: 5, max: 500, message: '评论内容长度在 5 到 500 个字符', trigger: 'blur' }
+    { min: 1, max: 500, message: '评论内容长度在 1 到 500 个字符', trigger: 'blur' }
   ]
 }
 
 const replyRules = {
   content: [
     { required: true, message: '请输入回复内容', trigger: 'blur' },
-    { min: 5, max: 300, message: '回复内容长度在 5 到 300 个字符', trigger: 'blur' }
+    { min: 1, max: 300, message: '回复内容长度在 1 到 300 个字符', trigger: 'blur' }
   ]
 }
 
@@ -202,6 +254,12 @@ const fetchComments = async () => {
     const response = await axios.get(`/api/comments/blog/${props.blogId}`)
     if (response.data) {
       comments.value = response.data
+      // 处理评论作者头像路径
+      comments.value.forEach(comment => {
+        if (comment.authorAvatar && !comment.authorAvatar.startsWith('http')) {
+          comment.authorAvatar = `http://localhost:8080${comment.authorAvatar}`
+        }
+      })
       // 获取回复
       await fetchRepliesForComments()
     }
@@ -220,6 +278,12 @@ const fetchRepliesForComments = async () => {
       const response = await axios.get(`/api/comments/${comment.id}/replies`)
       if (response.data) {
         comment.replies = response.data
+        // 处理回复作者头像路径
+        comment.replies.forEach(reply => {
+          if (reply.authorAvatar && !reply.authorAvatar.startsWith('http')) {
+            reply.authorAvatar = `http://localhost:8080${reply.authorAvatar}`
+          }
+        })
       }
     } catch (error) {
       console.error(`获取评论 ${comment.id} 的回复失败:`, error)
@@ -243,9 +307,56 @@ const fetchCommentCount = async () => {
   }
 }
 
+// 检查登录状态
+const checkLoginStatus = () => {
+  const userToken = localStorage.getItem('userToken')
+  const adminToken = localStorage.getItem('adminToken')
+  const token = userToken || adminToken
+  
+  if (!token) {
+    return false
+  }
+  
+  // 检查token格式和有效性
+  if (token.startsWith('token_')) {
+    // 真实token格式: token_userId_timestamp
+    const parts = token.split('_')
+    if (parts.length >= 3) {
+      const timestamp = parseInt(parts[2])
+      const currentTime = Date.now()
+      // 检查token是否过期（假设token有效期为24小时）
+      const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+      if (currentTime - timestamp > tokenExpiry) {
+        // token已过期，清理localStorage
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('adminToken')
+        return false
+      }
+      return true
+    }
+  }
+  
+  // 对于其他格式的token，暂时认为有效
+  // 在实际使用时会通过API调用验证
+  return true
+}
+
+// 跳转到登录页面
+const goToLogin = () => {
+  // 使用router进行页面跳转
+  window.location.href = '/login'
+}
+
 // 提交评论
 const submitComment = async () => {
   if (!commentFormRef.value) return
+  
+  // 检查登录状态
+  if (!checkLoginStatus()) {
+    ElMessage.warning('请先登录后再发表评论')
+    goToLogin()
+    return
+  }
   
   try {
     await commentFormRef.value.validate()
@@ -255,10 +366,39 @@ const submitComment = async () => {
     // 获取用户ID
     let userId = null
     const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
-    if (token && token.startsWith('token_')) {
-      const parts = token.split('_')
-      if (parts.length >= 3) {
-        userId = parseInt(parts[1])
+    if (token) {
+      if (token.startsWith('token_')) {
+        // 真实token格式: token_userId_timestamp
+        const parts = token.split('_')
+        if (parts.length >= 3) {
+          // 再次验证token是否过期
+          const timestamp = parseInt(parts[2])
+          const currentTime = Date.now()
+          const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+          if (currentTime - timestamp > tokenExpiry) {
+            ElMessage.error('登录已过期，请重新登录')
+            localStorage.removeItem('userToken')
+            localStorage.removeItem('adminToken')
+            goToLogin()
+            return
+          }
+          userId = parseInt(parts[1])
+        }
+      } else {
+        // 模拟token或其他格式，尝试从后端获取用户信息
+        try {
+          const userResponse = await axios.get('/api/auth/profile', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (userResponse.data && userResponse.data.id) {
+            userId = userResponse.data.id
+          }
+        } catch (error) {
+          console.warn('无法从token获取用户信息:', error)
+          ElMessage.error('登录状态异常，请重新登录')
+          goToLogin()
+          return
+        }
       }
     }
     
@@ -296,6 +436,13 @@ const submitComment = async () => {
 
 // 提交回复
 const submitReply = async (parentId) => {
+  // 检查登录状态
+  if (!checkLoginStatus()) {
+    ElMessage.warning('请先登录后再回复评论')
+    goToLogin()
+    return
+  }
+  
   // 检查是否正在回复该评论
   if (replyingTo.value !== parentId) {
     ElMessage.error('表单未准备就绪，请重试')
@@ -322,10 +469,39 @@ const submitReply = async (parentId) => {
     // 获取用户ID
     let userId = null
     const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
-    if (token && token.startsWith('token_')) {
-      const parts = token.split('_')
-      if (parts.length >= 3) {
-        userId = parseInt(parts[1])
+    if (token) {
+      if (token.startsWith('token_')) {
+        // 真实token格式: token_userId_timestamp
+        const parts = token.split('_')
+        if (parts.length >= 3) {
+          // 再次验证token是否过期
+          const timestamp = parseInt(parts[2])
+          const currentTime = Date.now()
+          const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+          if (currentTime - timestamp > tokenExpiry) {
+            ElMessage.error('登录已过期，请重新登录')
+            localStorage.removeItem('userToken')
+            localStorage.removeItem('adminToken')
+            goToLogin()
+            return
+          }
+          userId = parseInt(parts[1])
+        }
+      } else {
+        // 模拟token或其他格式，尝试从后端获取用户信息
+        try {
+          const userResponse = await axios.get('/api/auth/profile', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (userResponse.data && userResponse.data.id) {
+            userId = userResponse.data.id
+          }
+        } catch (error) {
+          console.warn('无法从token获取用户信息:', error)
+          ElMessage.error('登录状态异常，请重新登录')
+          goToLogin()
+          return
+        }
       }
     }
     
@@ -365,6 +541,12 @@ const submitReply = async (parentId) => {
 
 // 显示回复表单
 const showReplyForm = async (commentId) => {
+  // 检查登录状态
+  if (!checkLoginStatus()) {
+    ElMessage.warning('请先登录后再回复评论')
+    return
+  }
+  
   replyingTo.value = commentId
   // 清空回复表单
   replyForm.value = {
@@ -427,6 +609,88 @@ const formatDate = (date) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 检查是否可以删除评论
+const canDeleteComment = (comment) => {
+  if (!checkLoginStatus()) {
+    return false
+  }
+  
+  // 获取当前用户ID
+  let currentUserId = null
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+  if (token && token.startsWith('token_')) {
+    const parts = token.split('_')
+    if (parts.length >= 3) {
+      currentUserId = parseInt(parts[1])
+    }
+  }
+  
+  if (!currentUserId) {
+    return false
+  }
+  
+  // 用户可以删除自己的评论
+  if (comment.userId === currentUserId) {
+    return true
+  }
+  
+  // 文章作者可以删除任何评论（需要从props或其他地方获取文章作者信息）
+  if (props.blogAuthorId && props.blogAuthorId === currentUserId) {
+    return true
+  }
+  
+  return false
+}
+
+// 删除评论
+const deleteComment = async (commentId) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这条评论吗？删除后无法恢复。',
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+    
+    // 获取token并设置Authorization头
+    const userToken = localStorage.getItem('userToken')
+    const adminToken = localStorage.getItem('adminToken')
+    const token = userToken || adminToken
+    
+    const config = {}
+    if (token) {
+      config.headers = {
+        'Authorization': `Bearer ${token}`
+      }
+    }
+    
+    const response = await axios.delete(`/api/comments/${commentId}`, config)
+    
+    if (response.data && response.data.success) {
+      ElMessage.success('评论删除成功')
+      // 重新获取评论列表
+      await fetchComments()
+      await fetchCommentCount()
+    } else {
+      ElMessage.error('删除失败：' + (response.data.message || '未知错误'))
+    }
+  } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消删除
+      return
+    }
+    console.error('删除评论失败:', error)
+    if (error.response && error.response.data && error.response.data.message) {
+      ElMessage.error('删除失败：' + error.response.data.message)
+    } else {
+      ElMessage.error('删除评论失败，请稍后重试')
+    }
+  }
 }
 
 // 监听 blogId 变化
@@ -523,6 +787,16 @@ onMounted(() => {
   gap: 0.75rem;
 }
 
+.comment-avatar {
+  flex-shrink: 0;
+  border: 2px solid #f0f0f0;
+}
+
+.reply-avatar {
+  flex-shrink: 0;
+  border: 1px solid #e0e0e0;
+}
+
 .author-info {
   display: flex;
   flex-direction: column;
@@ -602,6 +876,13 @@ onMounted(() => {
 .comment-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.reply-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  justify-content: flex-end;
 }
 
 @media (max-width: 768px) {

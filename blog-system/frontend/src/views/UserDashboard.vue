@@ -7,7 +7,6 @@
           <h1 class="logo">个人博客 - 用户后台</h1>
           <div class="user-info">
             <span class="welcome">欢迎，{{ userInfo.username }}</span>
-            <el-button type="primary" plain @click="goToHomepage">返回首页</el-button>
           </div>
         </div>
       </div>
@@ -31,6 +30,10 @@
               <el-menu-item index="my-blogs">
                 <el-icon><Document /></el-icon>
                 <span>我的发布</span>
+              </el-menu-item>
+              <el-menu-item index="statistics">
+                <el-icon><DataAnalysis /></el-icon>
+                <span>个人统计</span>
               </el-menu-item>
               <el-menu-item index="create-blog">
                 <el-icon><EditPen /></el-icon>
@@ -66,12 +69,18 @@
               <div v-else class="blog-list">
                 <div v-for="blog in myBlogs" :key="blog.id" class="blog-item">
                   <div class="blog-info">
-                    <h3 class="blog-title">{{ blog.title }}</h3>
+                    <h3 
+                      class="blog-title" 
+                      :class="{ 'clickable': blog.isPublished }"
+                      @click="blog.isPublished ? goToBlogDetail(blog.id) : null"
+                    >
+                      {{ blog.title }}
+                    </h3>
                     <p class="blog-summary">{{ blog.summary }}</p>
                     <div class="blog-meta">
                       <span class="meta-item">
                         <el-icon><Calendar /></el-icon>
-                        {{ formatDate(blog.createdAt) }}
+                        {{ formatDate(blog.isPublished ? (blog.publishedAt || blog.createdAt) : blog.createdAt) }}
                       </span>
                       <span class="meta-item">
                         <el-icon><View /></el-icon>
@@ -83,6 +92,14 @@
                     </div>
                   </div>
                   <div class="blog-actions">
+                    <el-button 
+                      v-if="blog.isPublished" 
+                      size="small" 
+                      type="primary" 
+                      @click="goToBlogDetail(blog.id)"
+                    >
+                      查看
+                    </el-button>
                     <el-button size="small" @click="editBlog(blog)">编辑</el-button>
                     <el-button 
                       size="small" 
@@ -124,6 +141,32 @@
                 <el-form-item label="标签" prop="tags">
                   <el-input v-model="blogForm.tags" placeholder="请输入标签，用逗号分隔" />
                 </el-form-item>
+                <el-form-item label="文章图片">
+                  <div class="article-images">
+                    <div class="image-upload-area">
+                      <el-upload
+                        :action="'/api/upload/article-image'"
+                        :headers="uploadHeaders"
+                        :file-list="articleImageList"
+                        :on-success="handleArticleImageSuccess"
+                        :on-error="handleArticleImageError"
+                        :on-remove="handleArticleImageRemove"
+                        :before-upload="beforeArticleImageUpload"
+                        :limit="9"
+                        :on-exceed="handleExceed"
+                        name="file"
+                        accept="image/*"
+                        list-type="picture-card"
+                        multiple
+                      >
+                        <el-icon class="avatar-uploader-icon"><Plus /></el-icon>
+                      </el-upload>
+                      <div class="upload-tip">
+                        <p>支持上传jpg、png、gif格式图片，单张图片不超过2MB，最多9张</p>
+                      </div>
+                    </div>
+                  </div>
+                </el-form-item>
                 <el-form-item label="内容" prop="content">
                   <el-input
                     v-model="blogForm.content"
@@ -144,6 +187,132 @@
               </el-form>
             </div>
 
+            <!-- 个人统计 -->
+            <div v-if="activeMenu === 'statistics'" class="content-section">
+              <div class="section-header">
+                <h2>个人统计</h2>
+              </div>
+              
+              <div v-if="statisticsLoading" class="loading">
+                <el-skeleton :rows="5" animated />
+              </div>
+              
+              <div v-else class="statistics-content">
+                <!-- 发布统计 -->
+                <div class="stats-card">
+                  <h3>发布统计</h3>
+                  <div class="stats-grid">
+                    <div class="stat-item">
+                      <div class="stat-number">{{ publishStats.totalPublished }}</div>
+                      <div class="stat-label">已发布文章</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ publishStats.totalDrafts }}</div>
+                      <div class="stat-label">草稿文章</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ publishStats.thisMonthCount }}</div>
+                      <div class="stat-label">本月发布</div>
+                    </div>
+                  </div>
+                  
+                  <!-- 分类统计 -->
+                  <div v-if="publishStats.categoryStats && publishStats.categoryStats.length > 0" class="category-stats">
+                    <h4>分类统计</h4>
+                    <div class="category-list">
+                      <div v-for="category in publishStats.categoryStats" :key="category.category" class="category-item">
+                        <span class="category-name">{{ category.category || '未分类' }}</span>
+                        <span class="category-count">{{ category.count }}篇</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 热度统计 -->
+                <div class="stats-card">
+                  <h3>热度统计</h3>
+                  <div class="stats-grid">
+                    <div class="stat-item">
+                      <div class="stat-number">{{ popularityStats.totalViews }}</div>
+                      <div class="stat-label">总浏览量</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ popularityStats.totalLikes }}</div>
+                      <div class="stat-label">总点赞数</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ popularityStats.avgViews }}</div>
+                      <div class="stat-label">平均浏览量</div>
+                    </div>
+                    <div class="stat-item">
+                      <div class="stat-number">{{ popularityStats.avgLikes }}</div>
+                      <div class="stat-label">平均点赞数</div>
+                    </div>
+                  </div>
+                  
+                  <!-- 最受欢迎文章 -->
+                  <div v-if="popularityStats.topViewedArticles && popularityStats.topViewedArticles.length > 0" class="top-articles">
+                    <h4>最受欢迎文章（按浏览量）</h4>
+                    <div class="article-list">
+                      <div v-for="article in popularityStats.topViewedArticles" :key="article.id" class="article-item">
+                        <span class="article-title" @click="goToBlogDetail(article.id)">{{ article.title }}</span>
+                        <span class="article-views">{{ article.viewCount }}次浏览</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="popularityStats.topLikedArticles && popularityStats.topLikedArticles.length > 0" class="top-articles">
+                    <h4>最受欢迎文章（按点赞数）</h4>
+                    <div class="article-list">
+                      <div v-for="article in popularityStats.topLikedArticles" :key="article.id" class="article-item">
+                        <span class="article-title" @click="goToBlogDetail(article.id)">{{ article.title }}</span>
+                        <span class="article-likes">{{ article.likeCount }}个赞</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 点赞统计 -->
+                <div class="stats-card">
+                  <h3>我的点赞</h3>
+                  <div class="stats-grid">
+                    <div class="stat-item">
+                      <div class="stat-number">{{ likeStats.totalLikedArticles }}</div>
+                      <div class="stat-label">点赞文章数</div>
+                    </div>
+                  </div>
+                  
+                  <!-- 我点赞的文章列表 -->
+                  <div v-if="likedArticles && likedArticles.length > 0" class="liked-articles">
+                    <h4>我点赞的文章</h4>
+                    <div class="article-list">
+                      <div v-for="article in likedArticles.slice(0, 10)" :key="article.id" class="article-item">
+                        <span class="article-title" @click="goToBlogDetail(article.id)">{{ article.title }}</span>
+                        <span class="article-author">作者：{{ article.authorName }}</span>
+                        <span class="article-date">{{ formatDate(article.likedAt) }}</span>
+                      </div>
+                    </div>
+                    <div v-if="likedArticles.length > 10" class="show-more">
+                      <el-button type="text" @click="showAllLikedArticles = !showAllLikedArticles">
+                        {{ showAllLikedArticles ? '收起' : `查看全部${likedArticles.length}篇` }}
+                      </el-button>
+                    </div>
+                    <div v-if="showAllLikedArticles" class="article-list">
+                      <div v-for="article in likedArticles.slice(10)" :key="article.id" class="article-item">
+                        <span class="article-title" @click="goToBlogDetail(article.id)">{{ article.title }}</span>
+                        <span class="article-author">作者：{{ article.authorName }}</span>
+                        <span class="article-date">{{ formatDate(article.likedAt) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="empty-liked">
+                    <el-empty description="还没有点赞任何文章" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- 个人资料 -->
             <div v-if="activeMenu === 'profile'" class="content-section">
               <h2>个人资料</h2>
@@ -154,6 +323,39 @@
                 label-width="80px"
                 class="profile-form"
               >
+                <el-form-item label="头像">
+                  <div class="avatar-upload">
+                    <el-avatar 
+                      :size="80" 
+                      :src="profileForm.avatar || '/default-avatar.png'"
+                      class="avatar-preview"
+                    >
+                      <el-icon><User /></el-icon>
+                    </el-avatar>
+                    <div class="upload-actions">
+                      <el-upload
+                        :action="'/api/upload/avatar'"
+                        :headers="uploadHeaders"
+                        :show-file-list="false"
+                        :on-success="handleAvatarSuccess"
+                        :on-error="handleAvatarError"
+                        :before-upload="beforeAvatarUpload"
+                        name="file"
+                        accept="image/*"
+                      >
+                        <el-button size="small" type="primary">上传头像</el-button>
+                      </el-upload>
+                      <el-button 
+                        v-if="profileForm.avatar" 
+                        size="small" 
+                        type="danger" 
+                        @click="removeAvatar"
+                      >
+                        删除头像
+                      </el-button>
+                    </div>
+                  </div>
+                </el-form-item>
                 <el-form-item label="用户名" prop="username">
                   <el-input 
                     v-model="profileForm.username" 
@@ -201,7 +403,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -211,7 +413,8 @@ import {
   Plus,
   Calendar,
   View,
-  House
+  House,
+  DataAnalysis
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -236,7 +439,16 @@ const userInfo = reactive({
 const profileForm = reactive({
   username: '',
   email: '',
-  bio: ''
+  bio: '',
+  avatar: ''
+})
+
+// 上传头像的请求头
+const uploadHeaders = computed(() => {
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+  return token ? {
+    'Authorization': `Bearer ${token}`
+  } : {}
 })
 
 // 个人资料验证规则
@@ -249,12 +461,42 @@ const profileRules = {
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
   bio: [
-    { max: 500, message: '简介长度不能超过500个字符', trigger: 'blur' }
+    { max: 100, message: '简介长度不能超过个字符', trigger: 'blur' }
   ]
 }
 
 // 我的文章列表
 const myBlogs = ref([])
+
+// 个人统计相关数据
+const statisticsLoading = ref(false)
+const showAllLikedArticles = ref(false)
+
+// 发布统计
+const publishStats = reactive({
+  totalPublished: 0,
+  totalDrafts: 0,
+  thisMonthCount: 0,
+  categoryStats: []
+})
+
+// 热度统计
+const popularityStats = reactive({
+  totalViews: 0,
+  totalLikes: 0,
+  averageViews: 0,
+  averageLikes: 0,
+  topViewedArticles: [],
+  topLikedArticles: []
+})
+
+// 点赞统计
+const likeStats = reactive({
+  totalLikedArticles: 0
+})
+
+// 我点赞的文章列表
+const likedArticles = ref([])
 
 // 文章表单
 const blogForm = reactive({
@@ -262,8 +504,12 @@ const blogForm = reactive({
   summary: '',
   content: '',
   category: '',
-  tags: ''
+  tags: '',
+  images: []
 })
+
+// 文章图片列表
+const articleImageList = ref([])
 
 // 表单验证规则
 const blogRules = {
@@ -287,6 +533,8 @@ const handleMenuSelect = (index) => {
   activeMenu.value = index
   if (index === 'my-blogs') {
     fetchMyBlogs()
+  } else if (index === 'statistics') {
+    fetchStatistics()
   }
 }
 
@@ -309,6 +557,9 @@ const fetchUserInfo = async () => {
     profileForm.username = response.data.username || ''
     profileForm.email = response.data.email || ''
     profileForm.bio = response.data.bio || ''
+    // 确保头像URL包含完整的服务器地址
+    const avatarUrl = response.data.avatar_url || ''
+    profileForm.avatar = avatarUrl && !avatarUrl.startsWith('http') ? `http://localhost:8080${avatarUrl}` : avatarUrl
   } catch (error) {
     console.warn('获取用户信息失败:', error)
     // 从localStorage获取基本信息
@@ -321,6 +572,7 @@ const fetchUserInfo = async () => {
       const userData = {
         username: username,
         email: '',
+        bio: '',
         role: userRole || 'user',
         createdAt: ''
       }
@@ -328,13 +580,15 @@ const fetchUserInfo = async () => {
       console.log('User info set from localStorage:', userData)
       // 初始化个人资料表单
       profileForm.username = username
-      profileForm.bio = ''
-    } else {
-      console.error('No username found in localStorage')
-    }
-    // 初始化个人资料表单
       profileForm.email = ''
       profileForm.bio = ''
+      profileForm.avatar = ''
+    } else {
+      console.error('No username found in localStorage')
+      // 初始化个人资料表单
+      profileForm.email = ''
+      profileForm.bio = ''
+    }
   }
 }
 
@@ -362,13 +616,34 @@ const fetchMyBlogs = async () => {
 // 编辑文章
 const editBlog = (blog) => {
   editingBlog.value = blog
+  
+  // 解析图片数据
+  let images = []
+  if (blog.images) {
+    try {
+      images = JSON.parse(blog.images)
+    } catch (error) {
+      console.warn('解析图片数据失败:', error)
+      images = []
+    }
+  }
+  
   Object.assign(blogForm, {
     title: blog.title,
     summary: blog.summary,
     content: blog.content,
     category: blog.category,
-    tags: blog.tags
+    tags: blog.tags,
+    images: images
   })
+  
+  // 设置图片列表显示
+  articleImageList.value = images.map((url, index) => ({
+    name: `image_${index + 1}`,
+    url: url,
+    uid: Date.now() + index
+  }))
+  
   activeMenu.value = 'create-blog'
 }
 
@@ -389,6 +664,7 @@ const saveBlog = async (publish = false) => {
     
     const blogData = {
       ...blogForm,
+      images: JSON.stringify(blogForm.images),
       isPublished: publish
     }
     
@@ -466,8 +742,10 @@ const resetBlogForm = () => {
     summary: '',
     content: '',
     category: '',
-    tags: ''
+    tags: '',
+    images: []
   })
+  articleImageList.value = []
   editingBlog.value = null
 }
 
@@ -487,13 +765,15 @@ const updateProfile = async () => {
     const response = await axios.put('/api/auth/profile', {
       username: profileForm.username,
       email: profileForm.email,
-      bio: profileForm.bio
+      bio: profileForm.bio,
+      avatar: profileForm.avatar
     }, config)
     
     // 更新用户信息
     userInfo.username = profileForm.username
     userInfo.email = profileForm.email
     userInfo.bio = profileForm.bio
+    userInfo.avatar = profileForm.avatar
     
     // 更新localStorage中的用户名
     localStorage.setItem('username', profileForm.username)
@@ -513,9 +793,10 @@ const updateProfile = async () => {
   }
 }
 
-// 返回首页
-const goToHomepage = () => {
-  router.push('/')
+// 跳转到文章详情页
+const goToBlogDetail = (id) => {
+  console.log('用户后台点击文章，ID:', id)
+  router.push(`/blog/${id}`)
 }
 
 // 格式化日期
@@ -523,6 +804,191 @@ const formatDate = (date) => {
   if (!date) return ''
   const d = new Date(date)
   return d.toLocaleDateString('zh-CN')
+}
+
+// 头像上传前的验证
+const beforeAvatarUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+// 头像上传成功
+const handleAvatarSuccess = (response) => {
+  if (response.success && response.url) {
+    // 确保URL包含完整的服务器地址
+    const avatarUrl = response.url.startsWith('http') ? response.url : `http://localhost:8080${response.url}`
+    profileForm.avatar = avatarUrl
+    ElMessage.success('头像上传成功')
+  } else {
+    ElMessage.error(response.message || '头像上传失败')
+  }
+}
+
+// 头像上传失败
+const handleAvatarError = (error) => {
+  console.error('头像上传失败:', error)
+  ElMessage.error('头像上传失败，请稍后重试')
+}
+
+// 删除头像
+const removeAvatar = async () => {
+  try {
+    await ElMessageBox.confirm('确定要删除头像吗？', '确认删除', {
+      type: 'warning'
+    })
+    
+    if (profileForm.avatar) {
+      // 如果有头像URL，尝试删除服务器上的文件
+      const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+      const config = token ? {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      } : {}
+      
+      try {
+        await axios.delete('/api/upload/delete', {
+          ...config,
+          data: { url: profileForm.avatar }
+        })
+      } catch (error) {
+        console.warn('删除服务器文件失败:', error)
+      }
+    }
+    
+    profileForm.avatar = ''
+    ElMessage.success('头像删除成功')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除头像失败')
+    }
+  }
+}
+
+// 文章图片上传前的验证
+const beforeArticleImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+// 文章图片上传成功
+const handleArticleImageSuccess = (response, file) => {
+  if (response.success && response.url) {
+    // 确保URL包含完整的服务器地址
+    const imageUrl = response.url.startsWith('http') ? response.url : `http://localhost:8080${response.url}`
+    blogForm.images.push(imageUrl)
+    // 更新文件列表显示
+    file.url = imageUrl
+    ElMessage.success('图片上传成功')
+  } else {
+    ElMessage.error(response.message || '图片上传失败')
+  }
+}
+
+// 文章图片上传失败
+const handleArticleImageError = (error) => {
+  console.error('图片上传失败:', error)
+  ElMessage.error('图片上传失败，请稍后重试')
+}
+
+// 删除文章图片
+const handleArticleImageRemove = (file) => {
+  if (file.url) {
+    const index = blogForm.images.indexOf(file.url)
+    if (index > -1) {
+      blogForm.images.splice(index, 1)
+    }
+    
+    // 尝试删除服务器上的文件
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
+    axios.delete('/api/upload/delete', {
+      ...config,
+      data: { url: file.url }
+    }).catch(error => {
+      console.warn('删除服务器文件失败:', error)
+    })
+  }
+}
+
+// 超出文件数量限制
+const handleExceed = () => {
+  ElMessage.warning('最多只能上传9张图片')
+}
+
+// 获取个人统计数据
+const fetchStatistics = async () => {
+  statisticsLoading.value = true
+  try {
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    const config = token ? {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    } : {}
+    
+    // 获取当前用户信息
+    const userResponse = await axios.get('/api/auth/profile', config)
+    const currentUser = userResponse.data
+    
+    // 检查用户ID是否有效
+    if (!currentUser.id || currentUser.id === 0) {
+      console.warn('用户ID无效，跳过统计数据获取')
+      ElMessage.warning('请先登录以查看统计数据')
+      return
+    }
+    
+    // 并行获取各种统计数据
+    const [publishResponse, popularityResponse, likeResponse, likedArticlesResponse] = await Promise.all([
+      axios.get(`/api/user-statistics/publish/${currentUser.username}`, config),
+      axios.get(`/api/user-statistics/popularity/${currentUser.username}`, config),
+      axios.get(`/api/user-statistics/likes/${currentUser.id}`, config),
+      axios.get(`/api/user-statistics/liked-articles/${currentUser.id}`, config)
+    ])
+    
+    // 更新发布统计
+    Object.assign(publishStats, publishResponse.data)
+    
+    // 更新热度统计
+    Object.assign(popularityStats, popularityResponse.data)
+    
+    // 更新点赞统计
+    Object.assign(likeStats, likeResponse.data)
+    
+    // 更新我点赞的文章列表
+    likedArticles.value = likedArticlesResponse.data?.content || []
+    
+  } catch (error) {
+    console.warn('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
+  } finally {
+    statisticsLoading.value = false
+  }
 }
 
 // 组件挂载
@@ -649,6 +1115,16 @@ onMounted(() => {
   color: #333;
 }
 
+.blog-title.clickable {
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.blog-title.clickable:hover {
+  color: #409eff;
+  text-decoration: underline;
+}
+
 .blog-summary {
   margin: 0 0 1rem 0;
   color: #666;
@@ -689,6 +1165,120 @@ onMounted(() => {
   padding: 2rem;
 }
 
+/* 个人统计样式 */
+.statistics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.stats-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e9ecef;
+}
+
+.stats-card h3 {
+  margin: 0 0 1rem 0;
+  color: #495057;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.stats-card h4 {
+  margin: 1.5rem 0 1rem 0;
+  color: #6c757d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #dee2e6;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.category-stats,
+.top-articles,
+.liked-articles {
+  margin-top: 1rem;
+}
+
+.category-list,
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.category-item,
+.article-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.category-name,
+.article-title {
+  font-weight: 500;
+  color: #495057;
+}
+
+.article-title {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.article-title:hover {
+  color: #007bff;
+}
+
+.category-count,
+.article-views,
+.article-likes,
+.article-author,
+.article-date {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.show-more {
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.empty-liked {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
 @media (max-width: 768px) {
   .dashboard-content {
     flex-direction: column;
@@ -707,5 +1297,61 @@ onMounted(() => {
     margin-left: 0;
     justify-content: flex-start;
   }
+}
+
+/* 头像上传样式 */
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-preview {
+  border: 2px solid #dcdfe6;
+}
+
+.upload-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 文章图片上传样式 */
+.article-images {
+  width: 100%;
+}
+
+.image-upload-area {
+  width: 100%;
+}
+
+.upload-tip {
+  margin-top: 0.5rem;
+  color: #909399;
+  font-size: 12px;
+}
+
+.upload-tip p {
+  margin: 0;
+}
+
+/* Element Plus 上传组件样式调整 */
+:deep(.el-upload--picture-card) {
+  width: 100px;
+  height: 100px;
+}
+
+:deep(.el-upload-list--picture-card .el-upload-list__item) {
+  width: 100px;
+  height: 100px;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
 }
 </style>
