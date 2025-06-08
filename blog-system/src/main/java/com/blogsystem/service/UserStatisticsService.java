@@ -42,6 +42,12 @@ public class UserStatisticsService {
         // 总文章数
         result.put("totalArticles", totalPublished + totalDrafts);
         
+        // 本月发布文章数量
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
+        long thisMonthCount = blogRepository.countByAuthorNameAndIsPublishedAndCreatedAtBetween(authorName, true, startOfMonth, endOfMonth);
+        result.put("thisMonthCount", thisMonthCount);
+        
         // 按月份统计发布文章数量（最近12个月）
         LocalDateTime startDate = LocalDateTime.now().minusMonths(12);
         List<Object[]> monthlyStats = blogRepository.findMonthlyPublishStatsByAuthor(authorName, startDate);

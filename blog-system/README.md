@@ -1,176 +1,193 @@
-# 个人博客系统
+# 🌟 个人博客系统
 
 一个基于 Spring Boot + Vue.js 开发的现代化前后端分离博客系统，支持用户和管理员双重角色、文章管理、评论功能等完整的博客功能。
 
-## 🎯 最新更新
+## 📅 项目信息
 
-- ✅ **用户头像上传功能**：实现了完整的用户头像上传和显示功能，支持多种图片格式
-- ✅ **文件上传配置**：新增文件上传配置，支持图片大小限制和格式验证
-- ✅ **静态资源访问**：配置静态资源访问路径，支持头像图片的Web访问
-- ✅ **安全配置优化**：更新安全配置以支持文件上传功能
-- ✅ **用户点赞实体**：新增UserLike实体，支持用户点赞记录管理
-- ✅ **评论删除优化**：进一步优化评论删除功能，确保级联删除的稳定性
-- ✅ **前端图片显示**：完善文章详情页面的图片显示功能
-- ✅ **用户名长度验证**：修复用户名长度验证问题，提升用户体验
-- ✅ **用户统计代码**：添加用户相关的统计功能代码
-- ✅ **首页信息更新**：更新首页系统介绍和功能特性展示
-- ✅ **界面优化**：移除冗余的搜索按钮，优化用户界面布局
-- ✅ **文档更新**：全面更新项目文档，包括README、开发指南、部署说明等
-- ✅ **评论删除功能修复**：修复了删除评论时的外键约束错误，实现了级联删除功能
-- ✅ **级联删除机制**：完善了评论删除逻辑，删除父评论时会自动递归删除所有子回复
-- ✅ **评论权限验证**：修复了删除评论时缺少 Authorization 头的问题
-- ✅ **JSON 序列化优化**：解决了评论和博客 DTO 中的循环引用问题
-- ✅ **评论系统优化**：评论和回复现在显示真实用户名而非"匿名用户"
-- ✅ **UI 交互优化**：统一首页导航栏搜索按钮的悬停效果
-- ✅ **搜索对话框美化**：重新设计搜索对话框的关闭按钮
-- ✅ **排序功能修复**：修复了文章排序功能的关键问题
-- ✅ **用户界面优化**：将管理员和用户后台的"退出登录"按钮改为"返回首页"按钮
+- **最后更新**: 2025年6月8日
+- **版本**: v1.0.0
+- **开发状态**: 活跃开发中
+- **许可证**: MIT License
+
+## 🎯 最新更新 (2025年6月)
+
+- ✅ **公告系统完善**：实现了完整的公告发布、管理和展示功能
+- ✅ **用户头像上传**：支持多种图片格式的头像上传和显示
 - ✅ **文章点赞功能**：实现文章点赞、点赞计数和防重复点赞机制
-- ✅ **多条件搜索**：增强文章搜索和筛选功能
-- ✅ **Token 认证优化**：完善了用户身份验证机制
+- ✅ **评论系统优化**：完善评论删除、级联删除和权限验证
+- ✅ **搜索功能增强**：多条件搜索、筛选和排序功能
+- ✅ **界面优化**：现代化UI设计，响应式布局
+- ✅ **安全配置**：完善的身份验证和权限管理
 
-## 🚀 功能特性
+## 🚀 功能模块
 
-### ✅ 已实现功能（前后端均完成）
+### 📝 文章管理模块
 
-#### 📝 文章管理
+#### ✅ 已实现功能
+- **文章CRUD操作**
+  - 创建、编辑、删除博客文章
+  - 支持Markdown和富文本编辑
+  - 文章草稿和发布状态管理
+  - 文章图片上传和管理
 
-- ✅ 创建、编辑、删除博客文章（前端：UserDashboard.vue + 后端：BlogController.java）
-- ✅ 文章分类和标签管理（前端：Articles.vue + 后端：CategoryController.java, TagController.java）
-- ✅ 文章发布/草稿状态切换（前端：UserDashboard.vue + 后端：BlogController.java）
-- ✅ 分页显示文章列表（前端：Articles.vue + 后端：BlogController.java）
-- ✅ 文章详情页面（前端：BlogDetail.vue + 后端：BlogController.java）
-- ✅ 文章排序功能（前端：Articles.vue + 后端：BlogController.java）
-- ✅ 文章点赞功能（前端：BlogDetail.vue + 后端：BlogController.java）
-- ✅ 文章图片上传（前端：UserDashboard.vue + 后端：FileUploadController.java）
-- ⚠️ 支持 Markdown 编辑器（后端已支持，前端使用基础文本编辑器）
-- ✅ 文章浏览量统计（前后端已实现）
+- **文章展示功能**
+  - 分页显示文章列表
+  - 文章详情页面展示
+  - 文章浏览量统计
+  - 代码高亮显示
 
-#### 👥 用户系统
+- **文章分类管理**
+  - 分类创建、编辑、删除
+  - 按分类筛选文章
+  - 分类文章数量统计
 
-- ✅ 用户注册和登录（前端：Login.vue, Register.vue + 后端：UserController.java）
-- ✅ 管理员和普通用户双重登录（前端：Login.vue + 后端：UserController.java, AdminController.java）
-- ✅ 用户个人资料管理（前端：UserDashboard.vue + 后端：UserController.java）
-- ✅ 用户头像上传和显示（前端：UserDashboard.vue + 后端：UserController.java）
-- ✅ 用户个人博客管理（前端：UserDashboard.vue + 后端：BlogController.java）
-- ✅ 基本的管理员权限管理（前端：Admin.vue + 后端：AdminController.java）
-- ✅ 基于角色的路由守卫（前端：router/index.js）
-- ✅ 智能登录后重定向（前端：Login.vue）
-- ✅ 用户界面导航优化（前端：Admin.vue, UserDashboard.vue - 返回首页功能）
-- ✅ 用户点赞记录管理（后端：UserLike实体 + UserController.java）
+- **标签系统**
+  - 标签创建、编辑、删除
+  - 按标签筛选文章
+  - 标签使用频率统计
 
-#### 💬 评论系统
+- **文章排序功能**
+  - 按发布时间排序
+  - 按浏览量排序
+  - 按点赞数排序
+  - 按热度排序
 
-- ✅ 文章评论功能（前端：BlogDetail.vue + 后端：CommentController.java）
-- ✅ 评论回复功能（后端：CommentController.java）
-- ✅ 评论审核机制（后端：CommentService.java）
-- ⚠️ 评论管理界面（后端已实现，前端管理界面待完善）
-- ✅ 评论统计（后端：CommentController.java）
+- **文章点赞系统**
+  - 用户点赞/取消点赞
+  - 点赞数量统计
+  - 防重复点赞机制
 
-#### 🔍 搜索功能
+### 👥 用户管理模块
 
-- ✅ 按标题搜索文章（前端：Search.vue + 后端：BlogController.java）
-- ✅ 按分类筛选文章（前端：Articles.vue + 后端：BlogController.java）
-- ✅ 按标签筛选文章（前端：Articles.vue + 后端：BlogController.java）
-- ✅ 最新文章展示（前端：Home.vue + 后端：BlogController.java）
-- ✅ 多条件排序（按时间、热度、点赞、浏览量）（前端：Articles.vue + 后端：BlogController.java）
+#### ✅ 已实现功能
+- **用户认证系统**
+  - 用户注册和登录
+  - 管理员和普通用户双重登录
+  - 基于Token的身份验证
+  - 智能登录后重定向
 
-#### 📊 统计功能
+- **用户资料管理**
+  - 个人资料编辑
+  - 用户头像上传和显示
+  - 密码修改功能
 
-- ✅ 管理员数据概览（前端：Admin.vue + 后端：AdminController.java）
-- ✅ 用户个人统计（前端：UserDashboard.vue + 后端：UserStatisticsController.java）
-- ✅ 文章浏览量统计（前后端已实现）
-- ✅ 文章点赞统计（前后端已实现）
-- ✅ 分类文章数量统计（前后端已实现）
-- ✅ 用户点赞记录统计（前后端已实现）
+- **权限管理**
+  - 基于角色的权限控制
+  - 路由守卫机制
+  - 管理员权限验证
 
-#### 🏷️ 分类和标签管理
+- **用户统计**
+  - 个人文章统计
+  - 点赞记录管理
+  - 用户活跃度统计
 
-- ✅ 分类的创建、编辑、删除（后端：CategoryController.java）
-- ✅ 标签的创建、编辑、删除（后端：TagController.java）
-- ✅ 分类和标签的状态管理（后端已实现）
-- ✅ 分类和标签的前端管理界面（等待前端实现）
-- ✅ 分类和标签的搜索功能（等待前端实现）
+### 💬 评论系统模块
 
-### ⚠️ 部分实现功能（等待前端或后端完善）
+#### ✅ 已实现功能
+- **评论基础功能**
+  - 文章评论发布
+  - 评论回复功能
+  - 评论嵌套显示
 
-#### 📊 数据统计显示
+- **评论管理**
+  - 评论删除功能
+  - 级联删除机制
+  - 评论审核机制
+  - 评论权限验证
 
-- ⚠️ 数据可视化图表（后端数据已准备，等待前端图表实现）
-- ⚠️ 标签使用频率统计（后端已实现，等待前端显示）
+- **评论统计**
+  - 评论数量统计
+  - 用户评论记录
 
-#### 💬 评论管理界面
+### 🔍 搜索功能模块
 
-- ⚠️ 评论批量管理（后端已实现，等待前端管理界面）
-- ⚠️ 评论审核界面（后端已实现，等待前端界面）
+#### ✅ 已实现功能
+- **文章搜索**
+  - 按标题关键词搜索
+  - 按内容全文搜索
+  - 搜索结果高亮显示
 
-#### 🏷️ 分类标签管理
+- **筛选功能**
+  - 按分类筛选
+  - 按标签筛选
+  - 多条件组合筛选
 
-- ⚠️ 分类管理界面（后端已实现，等待前端管理界面）
-- ⚠️ 标签管理界面（后端已实现，等待前端管理界面）
-- ⚠️ 分类标签搜索（后端已实现，等待前端搜索界面）
+- **排序功能**
+  - 按时间排序
+  - 按热度排序
+  - 按点赞数排序
+  - 按浏览量排序
 
-### ❌ 未实现功能
+### 📢 公告系统模块
 
-#### 📷 图片上传功能
-- ✅ 文章图片上传（前后端已实现）
-- ✅ 用户头像上传（前后端已实现）
-- ⚠️ 图片管理和存储（基础功能已实现，管理界面待完善）
+#### ✅ 已实现功能
+- **公告管理**
+  - 公告创建、编辑、删除
+  - 公告发布状态管理
+  - 公告优先级设置
 
-#### 🔐 高级权限管理
+- **公告展示**
+  - 首页公告横幅
+  - 公告列表页面
+  - 公告详情页面
 
-- ❌ 细粒度权限控制（前后端均未实现）
-- ❌ 角色权限配置（前后端均未实现）
-- ❌ 权限继承机制（前后端均未实现）
+### 📊 统计分析模块
 
-#### 🎨 富文本编辑器
+#### ✅ 已实现功能
+- **管理员统计**
+  - 系统数据概览
+  - 用户统计信息
+  - 文章统计信息
+  - 评论统计信息
 
-- ❌ Markdown 编辑器集成（等待前端实现）
-- ❌ 富文本编辑器（等待前端实现）
-- ❌ 代码高亮显示（等待前端实现）
+- **用户个人统计**
+  - 个人文章统计
+  - 点赞收藏统计
+  - 评论互动统计
 
-#### 🔒 高级安全功能
+### 📁 文件管理模块
 
-- ❌ JWT Token 认证（等待后端实现）
-- ❌ 密码加密存储（等待后端实现）
-- ❌ 登录限制和防暴力破解（等待后端实现）
-- ❌ 操作日志记录（等待后端实现）
+#### ✅ 已实现功能
+- **图片上传**
+  - 文章图片上传
+  - 用户头像上传
+  - 图片格式验证
+  - 图片大小限制
 
-#### 🌐 SEO 和性能优化
-
-- ❌ SEO 优化（等待前端实现）
-- ❌ 页面缓存机制（等待前后端实现）
-- ❌ 静态资源优化（等待前端实现）
+- **静态资源管理**
+  - 静态资源访问配置
+  - 文件存储路径管理
 
 ## 🛠️ 技术栈
 
 ### 后端技术
-
-- **后端框架**: Spring Boot 3.5.0
+- **框架**: Spring Boot 3.5.0
 - **数据库**: MySQL 8.0+ / H2 (开发环境)
-- **ORM 框架**: Spring Data JPA
-- **Java 版本**: Java 21
+- **ORM**: Spring Data JPA
+- **Java版本**: Java 21
 - **构建工具**: Maven 3.6+
-- **API 文档**: SpringDoc OpenAPI 3
-- **认证方式**: 基于 Token 的身份验证
+- **安全框架**: Spring Security
+- **API文档**: SpringDoc OpenAPI 3
 - **文件上传**: Spring Boot MultipartFile
-- **静态资源**: Spring Boot Static Resource Handler
 
 ### 前端技术
-
-- **前端框架**: Vue.js 3 (Composition API)
-- **UI 组件库**: Element Plus
+- **框架**: Vue.js 3 (Composition API)
+- **UI组件库**: Element Plus
 - **构建工具**: Vite
-- **HTTP 客户端**: Axios
+- **HTTP客户端**: Axios
 - **路由管理**: Vue Router 4
-- **样式**: CSS3 + Scoped Styles
+- **富文本编辑器**: Quill.js
+- **Markdown支持**: markdown-it
+- **图表库**: ECharts
+- **代码高亮**: highlight.js
 
 ## 📋 系统要求
 
-- Java 21 或更高版本
-- Maven 3.6 或更高版本
-- Node.js 16 或更高版本
-- MySQL 8.0 或更高版本 (生产环境)
+- **Java**: 21 或更高版本
+- **Maven**: 3.6 或更高版本
+- **Node.js**: 16 或更高版本
+- **MySQL**: 8.0 或更高版本 (生产环境)
+- **浏览器**: 支持 ES6+ 的现代浏览器
 
 ## 🚀 快速开始
 
@@ -188,378 +205,199 @@ cd blog-system
 1. 创建数据库:
 
 ```sql
-CREATE DATABASE blog_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE blog_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 2. 修改 `src/main/resources/application.properties` 中的数据库配置:
 
 ```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/blog_db?useSSL=false&serverTimezone=Asia/Shanghai
+spring.datasource.url=jdbc:mysql://localhost:3306/blog_system?useSSL=false&serverTimezone=Asia/Shanghai
 spring.datasource.username=your_username
 spring.datasource.password=your_password
 ```
 
-#### 使用 H2 (开发环境)
+#### 使用 H2 数据库 (开发环境)
 
-如果想使用 H2 内存数据库进行快速测试，可以将 `application.properties` 修改为:
+无需额外配置，系统会自动创建内存数据库。
 
-```properties
-spring.datasource.url=jdbc:h2:mem:testdb
-spring.datasource.driver-class-name=org.h2.Driver
-spring.datasource.username=sa
-spring.datasource.password=
-spring.h2.console.enabled=true
-spring.jpa.hibernate.ddl-auto=create-drop
-spring.jpa.show-sql=true
-```
-
-### 3. 运行后端服务
+### 3. 启动后端服务
 
 ```bash
-# 使用 Maven 运行后端
-./mvnw spring-boot:run
+# 使用 Maven 启动
+mvn spring-boot:run
 
-# 或者先编译再运行
-./mvnw clean package
+# 或者编译后启动
+mvn clean package
 java -jar target/blog-system-0.0.1-SNAPSHOT.jar
 ```
 
-### 4. 运行前端服务
+后端服务将在 `http://localhost:8080` 启动
+
+### 4. 启动前端服务
 
 ```bash
-# 进入前端目录
 cd frontend
-
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
 ```
 
-### 5. 访问应用
+前端服务将在 `http://localhost:3000` 启动
 
-- **前端应用**: http://localhost:3000
-- **后端 API**: http://localhost:8080
-- **API 文档**: http://localhost:8080/swagger-ui.html
-- **H2 控制台** (如果使用 H2): http://localhost:8080/h2-console
+### 5. 访问系统
 
-## 📖 API 文档
+- **前端页面**: http://localhost:3000
+- **后端API**: http://localhost:8080
+- **API文档**: http://localhost:8080/swagger-ui.html
 
-应用启动后，可以通过以下地址访问 API 文档:
+## 📖 使用指南
 
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- OpenAPI JSON: http://localhost:8080/v3/api-docs
+### 管理员账户
 
-### 主要 API 端点
+系统启动后会自动创建管理员账户：
+- **用户名**: admin
+- **密码**: admin123
 
-#### 博客相关
+### 普通用户
 
-- `GET /api/blogs` - 获取所有已发布的博客（分页）
-- `GET /api/blogs/{id}` - 获取指定博客详情
-- `GET /api/blogs/my` - 获取用户自己的博客
-- `POST /api/blogs` - 创建新博客
-- `PUT /api/blogs/{id}` - 更新博客
-- `DELETE /api/blogs/{id}` - 删除博客
-- `PUT /api/blogs/{id}/publish` - 发布/取消发布博客
-- `GET /api/blogs/search?keyword={keyword}` - 搜索博客
-- `POST /api/blogs/{id}/like` - 点赞博客
-- `DELETE /api/blogs/{id}/like` - 取消点赞博客
-- `GET /api/blogs/{id}/like-status` - 获取点赞状态
-- `GET /api/blogs?sortBy={sortBy}` - 按条件排序获取博客（支持：time、heat、likes、views）
+可以通过注册页面创建普通用户账户。
 
-#### 管理员相关
+### 主要功能使用
 
-- `POST /api/admin/login` - 管理员登录
-- `GET /api/admin/blogs` - 获取所有博客（管理员）
-- `GET /api/admin/stats` - 获取统计数据
-- `POST /api/admin/blogs` - 管理员创建博客
-- `PUT /api/admin/blogs/{id}` - 管理员更新博客
-- `DELETE /api/admin/blogs/{id}` - 管理员删除博客
+1. **发布文章**: 登录后进入用户中心，点击"发布文章"
+2. **管理文章**: 在用户中心可以查看、编辑、删除自己的文章
+3. **浏览文章**: 在首页和文章列表页浏览所有公开文章
+4. **搜索文章**: 使用搜索框按关键词搜索文章
+5. **评论互动**: 在文章详情页发表评论和回复
+6. **管理后台**: 管理员可以访问管理后台进行系统管理
 
-#### 用户相关
+## 🔧 开发指南
 
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `GET /api/auth/profile` - 获取用户信息
-- `PUT /api/auth/profile` - 更新用户信息
-#### 文件上传相关
-
-- `POST /api/upload/avatar` - 上传用户头像
-- `POST /api/upload/article-image` - 上传文章图片（单张）
-- `POST /api/upload/article-images` - 批量上传文章图片（最多9张）
-- `DELETE /api/upload/delete` - 删除上传的文件
-- `GET /uploads/avatars/{filename}` - 获取用户头像
-- `GET /uploads/articles/{filename}` - 获取文章图片
-
-#### 用户统计相关
-
-- `GET /api/user-statistics/publish/{authorName}` - 获取用户发布统计
-- `GET /api/user-statistics/popularity/{authorName}` - 获取用户热度统计
-- `GET /api/user-statistics/likes/{userId}` - 获取用户点赞统计
-- `GET /api/user-statistics/liked-articles/{userId}` - 获取用户点赞的文章列表
-- `GET /api/user-statistics/comprehensive/{userId}/{authorName}` - 获取用户综合统计
-
-#### 评论相关
-
-- `POST /api/comments` - 创建评论
-- `GET /api/comments/blog/{blogId}` - 获取博客的所有评论
-- `POST /api/comments/reply` - 回复评论
-- `PUT /api/comments/{id}/approve` - 审核通过评论
-- `DELETE /api/comments/{id}` - 删除评论
-
-## 🎯 默认账号
-
-系统启动后会自动创建以下测试账号:
-
-### 管理员账号
-
-- 用户名: `admin`
-- 密码: `admin123`
-- 登录页面: 选择"管理员登录"
-- 登录后跳转: `/admin` (管理员后台)
-
-### 普通用户账号
-
-- 用户名: `user`
-- 密码: `user123`
-- 登录页面: 选择"用户登录"
-- 登录后跳转: `/dashboard` (用户仪表板)
-
-> 注意：用户也可以通过注册页面创建新账号，注册成功后会自动登录并跳转到用户仪表板。
-
-## 📁 项目结构
+### 项目结构
 
 ```
 blog-system/
-├── src/main/java/com/blogsystem/          # 后端源码 (Spring Boot)
-│   ├── config/                           # 配置类
-│   ├── controller/                       # 控制器层
-│   ├── entity/                          # 实体类
-│   ├── repository/                      # 数据访问层
-│   ├── service/                         # 业务逻辑层
-│   └── BlogSystemApplication.java       # 主启动类
-├── src/main/resources/                   # 资源文件
-│   ├── application.properties           # 应用配置
-│   ├── application-prod.yml             # 生产环境配置
-
-│   ├── data.sql                        # 初始数据
-│   └── schema.sql                      # 数据库结构
-├── src/test/java/                       # 测试代码
-├── frontend/                            # 前端源码 (Vue.js)
+├── src/main/java/com/blogsystem/     # 后端源码
+│   ├── controller/                   # 控制器层
+│   ├── service/                      # 服务层
+│   ├── repository/                   # 数据访问层
+│   ├── entity/                       # 实体类
+│   ├── dto/                         # 数据传输对象
+│   ├── config/                      # 配置类
+│   └── utils/                       # 工具类
+├── src/main/resources/              # 资源文件
+│   ├── application.properties       # 主配置文件
+│   ├── application-dev.yml         # 开发环境配置
+│   ├── application-prod.yml        # 生产环境配置
+│   └── data.sql                    # 初始化数据
+├── frontend/                        # 前端源码
 │   ├── src/
-│   │   ├── views/                      # 页面组件
-│   │   │   ├── Admin.vue               # 管理员页面
-│   │   │   ├── Articles.vue            # 文章列表页面
-│   │   │   ├── BlogDetail.vue          # 博客详情页面
-│   │   │   ├── Home.vue                # 首页
-│   │   │   ├── Login.vue               # 登录页面
-│   │   │   ├── Register.vue            # 注册页面
-│   │   │   ├── Search.vue              # 搜索页面
-│   │   │   └── UserDashboard.vue       # 用户仪表板
-│   │   ├── router/                     # 路由配置
-│   │   │   └── index.js                # 路由定义
-│   │   ├── style/                      # 样式文件
-│   │   │   └── global.css              # 全局样式
-│   │   ├── App.vue                     # 根组件
-│   │   └── main.js                     # 入口文件
-│   ├── index.html                      # HTML模板
-│   ├── package.json                    # 依赖配置
-│   ├── package-lock.json               # 依赖锁定文件
-│   └── vite.config.js                  # Vite配置
-├── target/                              # Maven构建输出
-├── .mvn/wrapper/                        # Maven Wrapper
-├── pom.xml                             # Maven配置
-├── mvnw                                # Maven Wrapper脚本 (Unix)
-├── mvnw.cmd                            # Maven Wrapper脚本 (Windows)
-
-├── start-backend.bat                   # 后端启动脚本
-├── install-service.bat                 # Windows服务安装脚本
-├── manage-service.bat                  # Windows服务管理脚本
-├── .gitignore                          # Git忽略文件
-├── .gitattributes                      # Git属性配置
-├── README.md                           # 项目说明
-├── DATABASE_SETUP.md                   # 数据库设置说明
-└── DEPLOYMENT.md                       # 部署说明
+│   │   ├── views/                   # 页面组件
+│   │   ├── components/              # 通用组件
+│   │   ├── router/                  # 路由配置
+│   │   └── style/                   # 样式文件
+│   ├── package.json                # 前端依赖
+│   └── vite.config.js              # Vite配置
+└── uploads/                         # 文件上传目录
+    ├── articles/                    # 文章图片
+    └── avatars/                     # 用户头像
 ```
 
-## ⚙️ 配置说明
+### API 接口文档
 
-### 数据库配置
+启动后端服务后，访问 `http://localhost:8080/swagger-ui.html` 查看完整的API文档。
 
-项目支持多种数据库配置，详细说明请参考 [DATABASE_SETUP.md](DATABASE_SETUP.md)。
+### 主要API端点
 
-**快速配置：**
+- **用户管理**: `/api/users/*`
+- **文章管理**: `/api/blogs/*`
+- **评论管理**: `/api/comments/*`
+- **分类管理**: `/api/categories/*`
+- **标签管理**: `/api/tags/*`
+- **公告管理**: `/api/announcements/*`
+- **文件上传**: `/api/upload/*`
+- **统计数据**: `/api/stats/*`
 
-- **MySQL（推荐）**：修改 `application.properties` 中的数据库连接信息
-- **H2（开发测试）**：无需额外配置，开箱即用
+## 🚀 部署指南
 
-### 环境配置文件
+### 生产环境部署
 
-- `application.properties` - 默认配置（开发环境）
-- `application-prod.yml` - 生产环境配置
-- `application-docker.yml` - Docker 环境配置
-
-### 服务器配置
-
-```properties
-# 默认配置
-server.port=8080
-server.servlet.context-path=/api
-
-# 生产环境会自动优化性能参数
-```
-
-## 🚀 部署
-
-本项目提供多种部署方案，详细说明请参考 [DEPLOYMENT.md](DEPLOYMENT.md)。
-
-### 快速部署
-
-#### 方案一：Windows 服务（推荐）
-
+1. **构建前端**:
 ```bash
-# 安装为 Windows 服务
-install-service.bat
-
-# 管理服务
-manage-service.bat
+cd frontend
+npm run build
 ```
 
-#### 方案二：直接运行
-
+2. **构建后端**:
 ```bash
-# 构建项目
-mvn clean package
+mvn clean package -Pprod
+```
 
-# 运行后端（生产模式）
-start-backend.bat
-
-# 或手动运行
+3. **部署**:
+```bash
 java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target/blog-system-0.0.1-SNAPSHOT.jar
 ```
 
-### 前端部署
+### Docker 部署
 
-```bash
-cd frontend
-npm install
-npm run build
-npm run preview
+```dockerfile
+# Dockerfile 示例
+FROM openjdk:21-jre-slim
+
+WORKDIR /app
+
+COPY target/blog-system-0.0.1-SNAPSHOT.jar app.jar
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "app.jar"]
 ```
 
-详细使用方法请参考 [DEPLOYMENT.md](DEPLOYMENT.md)。
+## 🤝 贡献指南
 
-## ✨ 功能特色
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
-### 核心功能
+## 📝 更新日志
 
-- 📝 **博客管理**：创建、编辑、删除博客文章，支持富文本编辑
-- 👥 **用户系统**：用户注册、登录、个人资料管理
-- 💬 **评论系统**：支持博客文章评论和回复
-- 🔐 **权限控制**：管理员和普通用户权限分离
-- 🔍 **搜索功能**：支持博客标题和内容搜索
-- 📄 **分页显示**：大数据量的分页处理
-- 🎯 **用户体验优化**：直观的导航设计，便捷的返回首页功能
+### v1.0.0 (2025-06-08)
+- 🎉 项目初始版本发布
+- ✅ 完整的博客系统功能
+- ✅ 用户管理和权限控制
+- ✅ 文章发布和管理
+- ✅ 评论系统
+- ✅ 搜索和筛选功能
+- ✅ 公告系统
+- ✅ 文件上传功能
+- ✅ 响应式前端界面
 
-### 技术特色
+## 🐛 问题反馈
 
-- 🚀 **高性能**：Spring Boot + Vue 3 + Element Plus 技术栈
-- 📱 **响应式设计**：支持桌面和移动设备
-- 🎨 **现代化 UI**：基于 Element Plus 的美观界面
-- 📊 **数据统计**：博客访问量、用户统计等
-- 🔧 **多环境配置**：开发、生产环境配置
+如果您在使用过程中遇到问题，请通过以下方式反馈：
 
-### 部署特色
-
-- 🖥️ **Windows 服务**：一键安装为系统服务，开机自启
-
-- 📋 **服务管理**：图形化服务管理界面
-- 🔄 **自动重启**：服务异常自动恢复
-- 📝 **详细文档**：完整的部署和配置说明
-
-### 🎨 现代化 UI 设计
-
-- **Element Plus 组件库**：提供丰富的 UI 组件
-- **响应式布局**：适配各种屏幕尺寸
-- **暗色主题支持**：用户可切换主题模式
-- **动画效果**：流畅的页面切换和交互动画
-
-### 🔧 技术架构
-
-- **前后端分离**：清晰的架构设计
-- **RESTful API**：标准的 API 设计
-- **JWT 认证**：安全的用户认证机制
-- **数据验证**：前后端双重数据验证
-- **异常处理**：完善的错误处理机制
-
-### 📊 性能优化
-
-- **数据库索引**：优化查询性能
-- **分页查询**：减少数据传输量
-- **缓存机制**：提升响应速度
-- **代码分割**：前端按需加载
-
-### 🛡️ 安全特性
-
-- **SQL 注入防护**：使用 JPA 防止 SQL 注入
-- **XSS 防护**：前端输入过滤和转义
-- **CSRF 防护**：跨站请求伪造防护
-- **密码加密**：使用 BCrypt 加密存储
-
-## 🧹 维护说明
-
-### 清理废弃文件
-
-项目已进行废弃文件清理，当前项目结构干净整洁：
-
-**已清理的内容：**
-
-- ✅ 无废弃的临时文件
-- ✅ 无多余的备份文件
-- ✅ 无未使用的配置文件
-- ✅ 项目结构规范化
-
-**定期维护建议：**
-
-```bash
-# 清理前端构建缓存（如需要）
-cd frontend
-rm -rf node_modules
-npm install
-
-# 清理后端构建文件
-mvn clean
-
-# 清理运行时日志文件（如存在）
-# 注意：logs/ 目录在 .gitignore 中，不会提交到版本控制
-rm -rf logs/
-```
-
-### 代码质量
-
-- ✅ 代码结构清晰，按功能模块组织
-- ✅ 前后端分离架构合理
-- ✅ 依赖管理规范（Maven + npm）
-- ✅ 配置文件完整（开发/生产环境）
-- 🔄 建议定期更新依赖版本
-- 🔄 建议完善单元测试覆盖率
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request 来改进这个项目。
+1. 在 GitHub 上提交 Issue
+2. 发送邮件至项目维护者
+3. 在项目讨论区发起讨论
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证。
+本项目采用 MIT 许可证。详情请参阅 [LICENSE](LICENSE) 文件。
 
-## 📞 联系方式
+## 🙏 致谢
 
-如有问题或建议，请通过以下方式联系:
+感谢以下开源项目的支持：
 
-- 提交 Issue
-- 发送邮件
+- [Spring Boot](https://spring.io/projects/spring-boot)
+- [Vue.js](https://vuejs.org/)
+- [Element Plus](https://element-plus.org/)
+- [MySQL](https://www.mysql.com/)
+- [Maven](https://maven.apache.org/)
+- [Vite](https://vitejs.dev/)
 
 ---
 
-**享受编码的乐趣！** 🎉
+**开发团队**: Blog System Development Team  
+**最后更新**: 2025年6月8日  
+**项目状态**: 🟢 活跃开发中

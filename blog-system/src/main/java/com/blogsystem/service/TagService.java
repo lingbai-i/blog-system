@@ -30,6 +30,10 @@ public class TagService {
         if (tagRepository.findByName(tag.getName()).isPresent()) {
             throw new RuntimeException("标签名称已存在: " + tag.getName());
         }
+        // 如果slug为空，自动生成
+        if (tag.getSlug() == null || tag.getSlug().trim().isEmpty()) {
+            tag.setSlug(tag.getName().toLowerCase().replace(" ", "-").replace("[", "").replace("]", ""));
+        }
         return tagRepository.save(tag);
     }
 
@@ -175,6 +179,8 @@ public class TagService {
                     tags.add(existingTag.get());
                 } else {
                     Tag newTag = new Tag(trimmedName);
+                    // 生成slug：将名称转为小写并替换空格为连字符
+                    newTag.setSlug(trimmedName.toLowerCase().replace(" ", "-").replace("[", "").replace("]", ""));
                     tags.add(tagRepository.save(newTag));
                 }
             }
@@ -182,16 +188,42 @@ public class TagService {
         return tags;
     }
 
-    // 从字符串解析标签（逗号分隔）
+    // 从字符串解析标签（支持JSON数组格式和逗号分隔格式）
     public List<Tag> parseAndCreateTags(String tagsString) {
         if (tagsString == null || tagsString.trim().isEmpty()) {
             return new ArrayList<>();
         }
 
-        List<String> tagNames = Arrays.stream(tagsString.split(","))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .collect(Collectors.toList());
+        List<String> tagNames = new ArrayList<>();
+        
+        try {
+            // 检查是否是JSON数组格式
+            if (tagsString.trim().startsWith("[") && tagsString.trim().endsWith("]")) {
+                // 使用简单的JSON解析（避免引入额外依赖）
+                String jsonContent = tagsString.trim().substring(1, tagsString.trim().length() - 1);
+                if (!jsonContent.trim().isEmpty()) {
+                    String[] jsonTags = jsonContent.split(",");
+                    for (String jsonTag : jsonTags) {
+                        String cleanTag = jsonTag.trim().replaceAll("^\"|\"$", "").trim();
+                        if (!cleanTag.isEmpty()) {
+                            tagNames.add(cleanTag);
+                        }
+                    }
+                }
+            } else {
+                // 按逗号分割的传统格式
+                tagNames = Arrays.stream(tagsString.split(","))
+                        .map(String::trim)
+                        .filter(name -> !name.isEmpty())
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception e) {
+            // 如果JSON解析失败，回退到逗号分割格式
+            tagNames = Arrays.stream(tagsString.split(","))
+                    .map(String::trim)
+                    .filter(name -> !name.isEmpty())
+                    .collect(Collectors.toList());
+        }
 
         return createOrGetTags(tagNames);
     }
@@ -215,7 +247,13 @@ public class TagService {
     // 获取热门标签
     public List<Tag> getPopularTags(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return tagRepository.findPopularTags(pageable);
+        List<Object[]> results = tagRepository.findPopularTags(pageable);
+        return results.stream().map(result -> {
+            Tag tag = (Tag) result[0];
+            Long blogCount = (Long) result[1];
+            tag.setBlogCount(blogCount);
+            return tag;
+        }).collect(Collectors.toList());
     }
 
     // 统计激活的标签数量

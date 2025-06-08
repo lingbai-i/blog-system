@@ -1,15 +1,58 @@
 <template>
   <div class="articles-page">
-    <!-- 头部导航 -->
-    <header class="header">
-      <div class="container">
-        <div class="header-content">
-          <h1 class="logo" @click="goHome">个人博客</h1>
-          <nav class="nav">
-            <router-link to="/" class="nav-link">首页</router-link>
-            <router-link to="/articles" class="nav-link active">文章</router-link>
-          </nav>
+     <!-- 头部导航 -->
+     <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <h1 @click="goHome">📝 个人博客系统</h1>
         </div>
+
+        <div class="user-section">
+          <template v-if="isLoggedIn">
+            <el-dropdown trigger="hover" placement="bottom-end">
+              <div class="user-info">
+                <el-avatar 
+                  :size="32" 
+                  :icon="UserFilled"
+                  class="user-avatar"
+                />
+                <span class="username">{{ username || '用户' }}</span>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="goToUserCenter">
+                    <el-icon><User /></el-icon>
+                    个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="goToPublish">
+                    <el-icon><EditPen /></el-icon>
+                    发布文章
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">
+                    <el-icon><SwitchButton /></el-icon>
+                    退出
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+          <template v-else>
+            <div class="auth-buttons">
+              <el-button @click="goToLogin" size="small">登录</el-button>
+              <el-button type="primary" @click="goToRegister" size="small">注册</el-button>
+            </div>
+          </template>
+        </div>
+        <nav class="nav">
+          <el-button @click="goHome" type="primary" size="small" class="home-btn">
+            <el-icon><House /></el-icon>
+            返回首页
+          </el-button>
+          <router-link to="/" class="nav-link">首页</router-link>
+          <router-link to="/articles" class="nav-link active">文章</router-link>
+          <router-link to="/announcements" class="nav-link">公告</router-link>
+          <router-link to="/publish" class="nav-link" v-if="isLoggedIn">发布文章</router-link>
+        </nav>
       </div>
     </header>
 
@@ -31,6 +74,7 @@
             <el-input
               v-model="searchKeyword"
               placeholder="输入关键字搜索文章..."
+              aria-label="搜索文章"
               class="search-input"
               size="large"
               @keyup.enter="handleKeywordEnter"
@@ -225,9 +269,9 @@
                     {{ article.commentCount || 0 }} 评论
                   </span>
                 </div>
-                <div class="article-tags" v-if="article.tags">
+                <div class="article-tags" v-if="article.tags && getTagsArray(article.tags).length > 0">
                   <el-tag
-                    v-for="tag in article.tags.split(',')"
+                    v-for="tag in getTagsArray(article.tags)"
                     :key="tag"
                     size="small"
                     class="tag"
@@ -299,6 +343,10 @@ import {
   Star,
   Delete,
   ChatDotRound,
+  UserFilled,
+  SwitchButton,
+  EditPen,
+  House,
 } from "@element-plus/icons-vue";
 
 const router = useRouter();
@@ -335,6 +383,23 @@ const searchSuggestions = ref([
 const hasSearchCriteria = computed(() => {
   return searchKeyword.value.trim() !== "" || categoryFilter.value !== "" || tagFilter.value !== "";
 });
+
+// 检查用户登录状态
+const isLoggedIn = computed(() => {
+  return localStorage.getItem('token') !== null;
+});
+
+// 获取用户名
+const username = computed(() => {
+  const userInfo = localStorage.getItem('userInfo');
+  if (userInfo) {
+    const user = JSON.parse(userInfo);
+    return user.username || user.name || '用户';
+  }
+  return '用户';
+});
+
+
 
 // 组件挂载时初始化
 onMounted(() => {
@@ -566,8 +631,34 @@ const goToArticleDetail = (id) => {
 
 // 跳转到首页
 const goHome = () => {
-  router.push("/");
-};
+  router.push('/')
+}
+
+const goToLogin = () => {
+  router.push('/login')
+}
+
+const goToRegister = () => {
+  router.push('/register')
+}
+
+const goToUserCenter = () => {
+  router.push('/user-center')
+}
+
+const goToPublish = () => {
+  router.push('/publish')
+}
+
+const handleLogout = () => {
+  // 清除登录状态
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  ElMessage.success('退出成功')
+  router.push('/')
+}
+
+
 
 // 格式化日期
 const formatDate = (dateString) => {
@@ -578,66 +669,205 @@ const formatDate = (dateString) => {
 
 // 获取文章的第一张图片
 const getFirstImage = (article) => {
-  if (!article.images) return null;
+  console.log('获取文章图片:', article.id, article.images);
+  
+  if (!article.images) {
+    console.log('文章无images字段:', article.id);
+    return null;
+  }
   
   try {
     const images = typeof article.images === 'string' 
       ? JSON.parse(article.images) 
       : article.images;
     
+    console.log('解析后的images:', images);
+    
     if (Array.isArray(images) && images.length > 0) {
-      return images[0];
+      const imageUrl = images[0];
+      // 确保URL是完整的访问路径
+      const fullUrl = imageUrl.startsWith('http') ? imageUrl : `http://localhost:8080${imageUrl}`;
+      console.log('返回图片URL:', fullUrl);
+      return fullUrl;
     }
   } catch (error) {
-    console.error('解析图片数据失败:', error);
+    console.error('解析图片数据失败:', error, article.images);
   }
   
   return null;
+};
+
+// 获取标签数组
+const getTagsArray = (tags) => {
+  if (!tags) return [];
+  
+  try {
+    // 如果是JSON字符串格式，先解析
+    if (typeof tags === 'string') {
+      // 检查是否是JSON数组格式
+      if (tags.startsWith('[') && tags.endsWith(']')) {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed.filter(tag => tag && tag.trim()) : [];
+      }
+      // 否则按逗号分割
+      return tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+    }
+    
+    // 如果已经是数组
+    if (Array.isArray(tags)) {
+      return tags.filter(tag => tag && tag.trim());
+    }
+  } catch (error) {
+    console.error('解析标签数据失败:', error);
+  }
+  
+  return [];
 };
 </script>
 
 <style scoped>
 .articles-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f5f7fa;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 1rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.logo h1 {
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 600;
   cursor: pointer;
   margin: 0;
+  transition: opacity 0.3s ease;
+}
+
+.logo h1:hover {
+  opacity: 0.8;
+}
+
+
+
+.user-section {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.user-info:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+}
+
+.user-info:hover .user-avatar {
+  transform: scale(1.15);
+}
+
+.username {
+  color: white;
+  font-weight: 500;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.auth-buttons .el-button {
+  border-color: rgba(255, 255, 255, 0.8);
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.auth-buttons .el-button:hover {
+  border-color: white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-buttons .el-button--primary:not(.is-plain) {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-buttons .el-button--primary:not(.is-plain):hover {
+  background-color: rgba(255, 255, 255, 0.35);
+  border-color: white;
 }
 
 .nav {
   display: flex;
-  gap: 2rem;
+  gap: 20px;
+  align-items: center;
+}
+
+.home-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  font-weight: 600;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.home-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .nav-link {
-  color: rgba(255, 255, 255, 0.8);
+  color: white;
   text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s;
   font-weight: 500;
-  transition: color 0.3s;
 }
 
-.nav-link:hover,
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .nav-link.active {
-  color: white;
+  background-color: rgba(255, 255, 255, 0.2);
+  font-weight: 600;
 }
 
 .container {
@@ -656,6 +886,7 @@ const getFirstImage = (article) => {
   align-items: center;
   margin-bottom: 2rem;
   background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: 2rem;
   border-radius: 12px;
@@ -674,6 +905,7 @@ const getFirstImage = (article) => {
 
 .articles-stats {
   background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   padding: 1rem 2rem;
   border-radius: 8px;
@@ -687,10 +919,11 @@ const getFirstImage = (article) => {
 }
 
 .loading {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   padding: 2rem;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
 }
 
 .articles-list {
@@ -699,22 +932,22 @@ const getFirstImage = (article) => {
 }
 
 .article-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   border-radius: 12px;
-  padding: 1.2rem;
+  padding: 1.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e4e7ed;
   min-height: 180px;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .article-card:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-color: #409eff;
 }
 
 .article-content {
@@ -731,8 +964,8 @@ const getFirstImage = (article) => {
 }
 
 .article-title {
-  color: white;
-  font-size: 1.5rem;
+  color: #303133;
+  font-size: 1.4rem;
   font-weight: 600;
   margin: 0 0 1rem 0;
   line-height: 1.4;
@@ -742,11 +975,16 @@ const getFirstImage = (article) => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-height: 4.2rem;
+  transition: color 0.3s ease;
+}
+
+.article-card:hover .article-title {
+  color: #409eff;
 }
 
 .article-summary {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
+  color: #606266;
+  font-size: 0.95rem;
   line-height: 1.6;
   margin: 0 0 1.5rem 0;
   display: -webkit-box;
@@ -768,8 +1006,8 @@ const getFirstImage = (article) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
+  color: #909399;
+  font-size: 0.85rem;
 }
 
 .article-meta .el-icon {
@@ -812,17 +1050,25 @@ const getFirstImage = (article) => {
 }
 
 .tag {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: none !important;
+  background: #f0f2f5 !important;
+  border: 1px solid #d9d9d9 !important;
+  color: #606266 !important;
+  transition: all 0.3s ease !important;
+}
+
+.tag:hover {
+  background: #409eff !important;
+  border-color: #409eff !important;
   color: white !important;
 }
 
 .no-articles {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   padding: 4rem 2rem;
   border-radius: 12px;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
 }
 
 .pagination {
@@ -830,19 +1076,20 @@ const getFirstImage = (article) => {
   justify-content: center;
   margin-top: 3rem;
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
 }
 
 /* 搜索栏样式 */
 .search-section {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 2.5rem;
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
 }
 
 .search-header {
@@ -853,23 +1100,22 @@ const getFirstImage = (article) => {
 }
 
 .search-header h1 {
-  color: white;
+  color: #303133;
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .search-stats-inline {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1.1rem;
-  background: rgba(255, 255, 255, 0.1);
+  color: #606266;
+  font-size: 1rem;
+  background: #f5f7fa;
   padding: 0.75rem 1.25rem;
-  border-radius: 25px;
-  backdrop-filter: blur(5px);
+  border-radius: 20px;
+  border: 1px solid #e4e7ed;
 }
 
 .search-form {
@@ -883,22 +1129,21 @@ const getFirstImage = (article) => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  border-radius: 25px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 2px solid #e4e7ed;
+  background: white;
   transition: all 0.3s ease;
-  padding: 0 20px;
+  padding: 0 16px;
 }
 
 .search-input :deep(.el-input__wrapper:hover) {
-  border-color: rgba(64, 158, 255, 0.5);
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
 }
 
 .search-input :deep(.el-input__wrapper.is-focus) {
   border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
 .search-icon {
@@ -923,10 +1168,9 @@ const getFirstImage = (article) => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: white;
+  color: #303133;
   font-weight: 500;
   font-size: 0.95rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .filter-select {
@@ -934,22 +1178,20 @@ const getFirstImage = (article) => {
 }
 
 .filter-select :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 2px solid #e4e7ed;
+  background: white;
   transition: all 0.3s ease;
 }
 
 .filter-select :deep(.el-input__wrapper:hover) {
-  border-color: rgba(64, 158, 255, 0.5);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
 }
 
 .filter-select :deep(.el-input__wrapper.is-focus) {
   border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
 .option-content {
@@ -965,59 +1207,60 @@ const getFirstImage = (article) => {
 }
 
 .clear-btn {
-  background: rgba(245, 101, 101, 0.1);
-  border: 2px solid rgba(245, 101, 101, 0.3);
-  color: #f56565;
-  border-radius: 12px;
+  background: white;
+  border: 2px solid #f56c6c;
+  color: #f56c6c;
+  border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .clear-btn:hover {
-  background: rgba(245, 101, 101, 0.2);
-  border-color: #f56565;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 101, 101, 0.2);
+  background: #f56c6c;
+  color: white;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3);
 }
 
 .search-btn {
-  background: linear-gradient(45deg, #409eff, #67c23a);
-  border: none;
-  border-radius: 12px;
+  background: #409eff;
+  border: 2px solid #409eff;
+  border-radius: 8px;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+  color: white;
 }
 
 .search-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+  background: #337ecc;
+  border-color: #337ecc;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 .search-stats {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   padding: 1rem 2rem;
-  border-radius: 12px;
+  border-radius: 8px;
   margin-bottom: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .search-stats p {
-  color: rgba(255, 255, 255, 0.9);
+  color: #606266;
   margin: 0;
   font-size: 1rem;
 }
 
 .search-suggestions {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: white;
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
 }
 
 .search-suggestions h3 {
-  color: white;
+  color: #303133;
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
 }
@@ -1030,24 +1273,51 @@ const getFirstImage = (article) => {
 }
 
 .suggestion-tag {
-  background: linear-gradient(45deg, rgba(64, 158, 255, 0.2), rgba(103, 194, 58, 0.2));
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
-  border-radius: 20px;
+  background: #f0f2f5;
+  border: 1px solid #d9d9d9;
+  color: #606266;
+  border-radius: 16px;
   padding: 0.5rem 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
-  backdrop-filter: blur(5px);
 }
 
 .suggestion-tag:hover {
-  background: linear-gradient(45deg, rgba(64, 158, 255, 0.3), rgba(103, 194, 58, 0.3));
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background: #409eff;
+  color: white;
+  border-color: #409eff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 /* 响应式设计 */
+@media (max-width: 1024px) {
+  .nav {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .header-content {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .logo {
+    order: 1;
+  }
+  
+  .user-section {
+    order: 2;
+  }
+  
+  .nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;

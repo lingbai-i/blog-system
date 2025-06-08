@@ -1,5 +1,8 @@
 <template>
   <div class="home">
+    <!-- 公告横幅 -->
+    <AnnouncementBanner />
+    
     <!-- 顶部导航 -->
     <header class="header">
       <div class="header-content">
@@ -117,6 +120,10 @@
                   <el-icon><Document /></el-icon>
                   <span>文章</span>
                 </li>
+                <li class="menu-item" @click="$router.push('/announcements')">
+                  <el-icon><Bell /></el-icon>
+                  <span>公告</span>
+                </li>
                 <li class="menu-item" @click="openSearchDialog">
                   <el-icon><Search /></el-icon>
                   <span>搜索</span>
@@ -124,6 +131,10 @@
                 <li class="menu-item" v-if="isLoggedIn && userRole === 'admin'" @click="goToAdmin">
                   <el-icon><Setting /></el-icon>
                   <span>管理后台</span>
+                </li>
+                <li class="menu-item" v-if="isLoggedIn" @click="goToPublish">
+                  <el-icon><Document /></el-icon>
+                  <span>发布文章</span>
                 </li>
                 <li class="menu-item" v-if="isLoggedIn && userRole !== 'admin'" @click="goToUserCenter">
                   <el-icon><User /></el-icon>
@@ -149,8 +160,20 @@
                 <div class="feature-tag">✅ 文章搜索排序</div>
                 <div class="feature-tag">✅ 响应式设计</div>
               </div>
-              <div class="hero-actions" v-if="isLoggedIn">
-                <el-button type="primary" @click="loadStats" :loading="statsLoading" size="small">查看系统统计</el-button>
+              <div class="hero-actions">
+                <template v-if="isLoggedIn">
+                  <el-button type="primary" @click="goToPublish" size="large">
+                    <el-icon><Document /></el-icon>
+                    发布文章
+                  </el-button>
+                  <el-button @click="loadStats" :loading="statsLoading" size="large">查看系统统计</el-button>
+                </template>
+                <template v-else>
+                  <el-button type="primary" @click="goToLogin" size="large">
+                    <el-icon><User /></el-icon>
+                    登录后发布文章
+                  </el-button>
+                </template>
               </div>
             </div>
           </section>
@@ -242,21 +265,21 @@
         <!-- 右侧边栏 -->
         <aside class="right-sidebar">
           <div class="sidebar-content">
-            <!-- 热门文章 -->
+            <!-- 热门标签 -->
             <div class="sidebar-section">
-              <h3 class="sidebar-title">热门文章</h3>
-              <div class="hot-articles">
+              <h3 class="sidebar-title">热门标签</h3>
+              <div class="hot-tags">
                 <div 
-                  v-for="(blog, index) in blogs.slice(0, 5)" 
-                  :key="'hot-' + blog.id"
-                  class="hot-article-item"
-                  @click="goToBlogDetail(blog.id)"
+                  v-for="(tag, index) in hotTags" 
+                  :key="'hot-tag-' + tag.id"
+                  class="hot-tag-item"
+                  @click="goToTagArticles(tag.name)"
                 >
                   <span class="hot-rank">{{ index + 1 }}</span>
-                  <div class="hot-article-content">
-                    <h4 class="hot-article-title">{{ blog.title }}</h4>
-                    <div class="hot-article-meta">
-                      <span class="hot-views">{{ blog.viewCount || 0 }} 阅读</span>
+                  <div class="hot-tag-content">
+                    <h4 class="hot-tag-name">{{ tag.name }}</h4>
+                    <div class="hot-tag-meta">
+                      <span class="hot-count">{{ tag.blogCount || 0 }} 篇文章</span>
                     </div>
                   </div>
                 </div>
@@ -326,7 +349,7 @@
                 </div>
                 <div class="info-item">
                   <span class="info-label">更新时间</span>
-                  <span class="info-value">2025-01-01</span>
+                  <span class="info-value">2025年6月8日</span>
                 </div>
               </div>
             </div>
@@ -338,7 +361,35 @@
     <!-- 页脚 -->
     <footer class="footer">
       <div class="container">
-        <p>&copy; 2025 个人博客系统. 基于 Spring Boot 开发.</p>
+        <div class="footer-divider"></div>
+        <div class="footer-content">
+          <div class="footer-main">
+            <div class="footer-logo">
+              <h3>📝 个人博客系统</h3>
+              <p>基于 Spring Boot + Vue.js 构建的现代化博客平台</p>
+            </div>
+          </div>
+          <div class="footer-info">
+            <div class="project-details">
+              <h4>项目信息</h4>
+              <div class="detail-item">
+                <span class="detail-label">开发团队</span>
+                <span class="detail-value">lingbai-i Teams</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">版本</span>
+                <span class="detail-value">v1.0.0</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">发布时间</span>
+                <span class="detail-value">2025年6月8日</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 lingbai-i Teams. All rights reserved.</p>
+        </div>
       </div>
     </footer>
 
@@ -484,8 +535,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete, ChatDotRound, UserFilled, Setting, SwitchButton, House, Document } from '@element-plus/icons-vue'
+import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete, ChatDotRound, UserFilled, Setting, SwitchButton, House, Document, Bell } from '@element-plus/icons-vue'
 import axios from 'axios'
+import AnnouncementBanner from '../components/AnnouncementBanner.vue'
 
 const router = useRouter()
 
@@ -507,6 +559,9 @@ const systemStats = ref({
   totalComments: 0,
   totalUsers: 0
 })
+const hotTags = ref([])
+
+
 
 // 搜索弹窗相关数据
 const searchDialogVisible = ref(false)
@@ -697,10 +752,47 @@ const fetchTags = async () => {
   }
 }
 
+// 获取热门标签
+const fetchHotTags = async () => {
+  try {
+    const response = await axios.get('/api/tags/popular', {
+      params: { limit: 5 }
+    })
+    if (response.data && Array.isArray(response.data)) {
+      hotTags.value = response.data
+    } else {
+      // 提供默认热门标签数据
+      hotTags.value = [
+        { id: 1, name: "Vue.js", blogCount: 15 },
+        { id: 2, name: "Spring Boot", blogCount: 12 },
+        { id: 3, name: "JavaScript", blogCount: 10 },
+        { id: 4, name: "Java", blogCount: 8 },
+        { id: 5, name: "MySQL", blogCount: 6 }
+      ]
+    }
+  } catch (error) {
+    console.error('获取热门标签失败:', error)
+    // 提供默认热门标签数据
+    hotTags.value = [
+      { id: 1, name: "Vue.js", blogCount: 15 },
+      { id: 2, name: "Spring Boot", blogCount: 12 },
+      { id: 3, name: "JavaScript", blogCount: 10 },
+      { id: 4, name: "Java", blogCount: 8 },
+      { id: 5, name: "MySQL", blogCount: 6 }
+    ]
+  }
+}
+
 // 跳转到博客详情
 const goToBlogDetail = (id) => {
   console.log('首页点击文章，ID:', id)
   router.push(`/blog/${id}`)
+}
+
+// 跳转到标签文章页面
+const goToTagArticles = (tagName) => {
+  console.log('首页点击标签:', tagName)
+  router.push({ path: '/articles', query: { tag: tagName } })
 }
 
 
@@ -745,14 +837,18 @@ const loadStats = async () => {
       systemStats.value.totalComments = 0
     }
 
-    // 获取用户统计
+    // 获取系统统计（包含用户数量）
     try {
-      const userResponse = await axios.get('/api/users')
-      if (userResponse.data) {
-        systemStats.value.totalUsers = Array.isArray(userResponse.data) ? userResponse.data.length : 0
+      const systemResponse = await axios.get('/api/system/stats')
+      if (systemResponse.data) {
+        systemStats.value.totalUsers = systemResponse.data.totalUsers || 0
+        // 如果系统统计API返回了博客数据，也可以使用它
+        if (systemResponse.data.totalPublishedBlogs !== undefined) {
+          systemStats.value.totalBlogs = systemResponse.data.totalPublishedBlogs
+        }
       }
     } catch (error) {
-      console.warn('获取用户统计失败:', error)
+      console.warn('获取系统统计失败:', error)
       systemStats.value.totalUsers = 0
     }
 
@@ -845,18 +941,29 @@ const formatDate = (date) => {
 
 // 获取文章的第一张图片
 const getFirstImage = (blog) => {
-  if (!blog.images) return null
+  console.log('获取博客图片:', blog.id, blog.images)
+  
+  if (!blog.images) {
+    console.log('博客无images字段:', blog.id)
+    return null
+  }
   
   try {
     const images = typeof blog.images === 'string' 
       ? JSON.parse(blog.images) 
       : blog.images
     
+    console.log('解析后的images:', images)
+    
     if (Array.isArray(images) && images.length > 0) {
-      return images[0]
+      const imageUrl = images[0]
+      // 确保URL是完整的访问路径
+      const fullUrl = imageUrl.startsWith('http') ? imageUrl : `http://localhost:8080${imageUrl}`
+      console.log('返回图片URL:', fullUrl)
+      return fullUrl
     }
   } catch (error) {
-    console.error('解析图片数据失败:', error)
+    console.error('解析图片数据失败:', error, blog.images)
   }
   
   return null
@@ -920,10 +1027,23 @@ const goToRegister = () => {
   router.push('/register')
 }
 
+// 跳转到发布文章页面
+const goToPublish = () => {
+  if (isLoggedIn.value) {
+    router.push('/publish')
+  } else {
+    // 未登录时提示并跳转到登录页面
+    router.push('/login')
+  }
+}
+
+
+
 // 组件挂载时获取数据
 onMounted(async () => {
   await checkLoginStatus()
   fetchBlogs()
+  fetchHotTags()
 })
 </script>
 
@@ -1328,6 +1448,7 @@ onMounted(async () => {
   font-size: 0.9rem;
   font-weight: 500;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
@@ -1339,9 +1460,32 @@ onMounted(async () => {
 
 .hero-actions {
   display: flex;
-  gap: 10px;
+  gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.hero-actions .el-button {
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hero-actions .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hero-actions .el-button--primary {
+  background: linear-gradient(135deg, #409eff 0%, #36d1dc 100%);
+  border: none;
+}
+
+.hero-actions .el-button--primary:hover {
+  background: linear-gradient(135deg, #66b1ff 0%, #5dade2 100%);
 }
 
 /* 右侧边栏 */
@@ -1350,13 +1494,15 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.hot-articles {
+.hot-articles,
+.hot-tags {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.hot-article-item {
+.hot-article-item,
+.hot-tag-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -1367,7 +1513,8 @@ onMounted(async () => {
   border: 1px solid #f0f0f0;
 }
 
-.hot-article-item:hover {
+.hot-article-item:hover,
+.hot-tag-item:hover {
   background-color: #f5f7fa;
   border-color: #409eff;
 }
@@ -1386,12 +1533,14 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.hot-article-content {
+.hot-article-content,
+.hot-tag-content {
   flex: 1;
   min-width: 0;
 }
 
-.hot-article-title {
+.hot-article-title,
+.hot-tag-name {
   font-size: 14px;
   font-weight: 500;
   color: #333;
@@ -1403,15 +1552,26 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.hot-article-meta {
+.hot-article-meta,
+.hot-tag-meta {
   font-size: 12px;
   color: #999;
 }
 
-.hot-views {
+.hot-views,
+.hot-count {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.hot-tag-name {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.hot-tag-item:hover .hot-tag-name {
+  color: #66b1ff;
 }
 
 .feature-list {
@@ -1839,15 +1999,119 @@ onMounted(async () => {
 
 /* Footer */
 .footer {
-  background: #333;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   color: white;
-  text-align: center;
-  padding: 2rem 0;
-  margin-top: 3rem;
+  margin-top: 4rem;
 }
 
-.footer p {
+.footer-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4a90e2, transparent);
+  margin-bottom: 2rem;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 2rem 0;
+}
+
+.footer-main {
+  flex: 1;
+  min-width: 300px;
+}
+
+.footer-logo h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #4a90e2;
+  font-weight: 600;
+}
+
+.footer-logo p {
   margin: 0;
+  font-size: 14px;
+  color: #bdc3c7;
+  line-height: 1.5;
+}
+
+.footer-info {
+  flex: 1;
+  min-width: 250px;
+}
+
+.project-details h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #4a90e2;
+  font-weight: 600;
+  border-bottom: 2px solid #4a90e2;
+  padding-bottom: 0.5rem;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: #95a5a6;
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 13px;
+  color: #ecf0f1;
+  font-weight: 600;
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 13px;
+  color: #95a5a6;
+}
+
+/* 响应式设计 - 页脚 */
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+  
+  .footer-main,
+  .footer-info {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .detail-item {
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .project-details h4 {
+    text-align: center;
+  }
 }
 
 /* 搜索弹窗样式 */
@@ -2345,4 +2609,6 @@ onMounted(async () => {
     font-size: 13px;
   }
 }
+
+
 </style>

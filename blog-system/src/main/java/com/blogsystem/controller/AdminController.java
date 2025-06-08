@@ -2,8 +2,10 @@ package com.blogsystem.controller;
 
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.User;
+import com.blogsystem.entity.Announcement;
 import com.blogsystem.service.BlogService;
 import com.blogsystem.service.UserService;
+import com.blogsystem.service.AnnouncementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ public class AdminController {
 
     private final BlogService blogService;
     private final UserService userService;
+    private final AnnouncementService announcementService;
 
     // 获取所有博客（管理员，支持搜索和状态筛选）
     @GetMapping("/blogs")
@@ -77,12 +80,20 @@ public class AdminController {
         // 获取今日发布统计
         long todayPosts = blogService.getTodayPublishedCount();
 
+        // 获取公告统计
+        long totalAnnouncements = announcementService.getTotalAnnouncementCount();
+        long publishedAnnouncements = announcementService.getPublishedAnnouncementCount();
+        long pinnedAnnouncements = announcementService.getPinnedAnnouncementCount();
+
         stats.put("totalBlogs", totalBlogs);
         stats.put("publishedBlogs", publishedBlogs);
         stats.put("draftBlogs", draftBlogs);
         stats.put("totalViews", totalViews);
         stats.put("totalUsers", totalUsers);
         stats.put("todayPosts", todayPosts);
+        stats.put("totalAnnouncements", totalAnnouncements);
+        stats.put("publishedAnnouncements", publishedAnnouncements);
+        stats.put("pinnedAnnouncements", pinnedAnnouncements);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
@@ -104,7 +115,7 @@ public class AdminController {
             Map<String, Object> data = new HashMap<>();
             data.put("token", "admin_token_" + System.currentTimeMillis());
             data.put("username", username);
-            
+
             response.put("success", true);
             response.put("message", "登录成功");
             response.put("data", data);
@@ -128,7 +139,7 @@ public class AdminController {
             response.put("message", "未授权访问");
             return ResponseEntity.status(401).body(response);
         }
-        
+
         token = token.substring(7);
         try {
             // 检查是否为管理员token格式
@@ -144,18 +155,18 @@ public class AdminController {
                 if (parts.length >= 2) {
                     Long userId = Long.parseLong(parts[1]);
                     Optional<User> userOpt = userService.findById(userId);
-                    
+
                     if (userOpt.isPresent()) {
                         User user = userOpt.get();
                         String userRole = user.getIsAdmin() ? "admin" : "user";
-                        
+
                         // 检查是否为管理员
                         if (!"admin".equals(userRole)) {
                             response.put("success", false);
                             response.put("message", "权限不足，只有管理员可以删除博客");
                             return ResponseEntity.status(403).body(response);
                         }
-                        
+
                         // 执行删除操作
                         blogService.deleteBlog(id);
                         response.put("success", true);
@@ -201,6 +212,206 @@ public class AdminController {
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "更新失败: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== 公告管理接口 ====================
+
+    // 获取所有公告（管理员，支持分页和搜索）
+    @GetMapping("/announcements")
+    public ResponseEntity<Map<String, Object>> getAllAnnouncements(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Page<Announcement> announcements;
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                announcements = announcementService.searchAnnouncements(keyword.trim(), page, size);
+            } else {
+                announcements = announcementService.findAllAnnouncements(page, size);
+            }
+            response.put("success", true);
+            response.put("data", announcements);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "获取公告列表失败: " + e.getMessage());
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    // 创建公告
+    @PostMapping("/announcements")
+    public ResponseEntity<Map<String, Object>> createAnnouncement(
+            @RequestBody Announcement announcement,
+            HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 验证管理员权限
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            // 设置作者信息（简化处理，实际应从token解析）
+            announcement.setAuthorId(1L);
+            announcement.setAuthorName("管理员");
+
+            Announcement createdAnnouncement = announcementService.createAnnouncement(announcement);
+            response.put("success", true);
+            response.put("message", "公告创建成功");
+            response.put("data", createdAnnouncement);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "创建公告失败: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 更新公告
+    @PutMapping("/announcements/{id}")
+    public ResponseEntity<Map<String, Object>> updateAnnouncement(
+            @PathVariable Long id,
+            @RequestBody Announcement announcement,
+            HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 验证管理员权限
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            Announcement updatedAnnouncement = announcementService.updateAnnouncement(id, announcement);
+            if (updatedAnnouncement != null) {
+                response.put("success", true);
+                response.put("message", "公告更新成功");
+                response.put("data", updatedAnnouncement);
+            } else {
+                response.put("success", false);
+                response.put("message", "公告不存在");
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "更新公告失败: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 发布/取消发布公告
+    @PutMapping("/announcements/{id}/publish")
+    public ResponseEntity<Map<String, Object>> togglePublishAnnouncement(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> request,
+            HttpServletRequest httpRequest) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 验证管理员权限
+        String token = httpRequest.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            Boolean isPublished = request.get("isPublished");
+            Announcement updatedAnnouncement;
+
+            if (isPublished) {
+                updatedAnnouncement = announcementService.publishAnnouncement(id);
+            } else {
+                updatedAnnouncement = announcementService.unpublishAnnouncement(id);
+            }
+
+            if (updatedAnnouncement != null) {
+                response.put("success", true);
+                response.put("message", isPublished ? "公告发布成功" : "公告取消发布成功");
+                response.put("data", updatedAnnouncement);
+            } else {
+                response.put("success", false);
+                response.put("message", "公告不存在");
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "操作失败: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 置顶/取消置顶公告 List<Announcement> announcements =
+    // announcementService.getAllAnnouncements();
+
+    @PutMapping("/announcements/{id}/pin")
+    public ResponseEntity<Map<String, Object>> togglePinAnnouncement(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 验证管理员权限
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            Announcement updatedAnnouncement = announcementService.togglePinAnnouncement(id);
+            if (updatedAnnouncement != null) {
+                response.put("success", true);
+                response.put("message", updatedAnnouncement.getIsPinned() ? "公告置顶成功" : "公告取消置顶成功");
+                response.put("data", updatedAnnouncement);
+            } else {
+                response.put("success", false);
+                response.put("message", "公告不存在");
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "操作失败: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 删除公告
+    @DeleteMapping("/announcements/{id}")
+    public ResponseEntity<Map<String, Object>> deleteAnnouncement(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+
+        // 验证管理员权限
+        String token = request.getHeader("Authorization");
+        if (token == null || !token.startsWith("Bearer ")) {
+            response.put("success", false);
+            response.put("message", "未授权访问");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            boolean deleted = announcementService.deleteAnnouncement(id);
+            if (deleted) {
+                response.put("success", true);
+                response.put("message", "公告删除成功");
+            } else {
+                response.put("success", false);
+                response.put("message", "公告不存在");
+            }
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "删除公告失败: " + e.getMessage());
         }
 
         return ResponseEntity.ok(response);

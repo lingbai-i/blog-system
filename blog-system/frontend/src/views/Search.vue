@@ -62,9 +62,9 @@
                   {{ blog.likeCount || 0 }}
                 </span>
               </div>
-              <div class="blog-tags" v-if="blog.tags">
+              <div class="blog-tags" v-if="blog.tags && getTagsArray(blog.tags).length > 0">
                 <el-tag
-                  v-for="tag in blog.tags.split(',')"
+                  v-for="tag in getTagsArray(blog.tags)"
                   :key="tag"
                   size="small"
                   class="tag"
@@ -136,23 +136,60 @@ onMounted(() => {
 
 // 获取文章的第一张图片
 const getFirstImage = (blog) => {
-  if (!blog.images) return null;
+  console.log('获取搜索博客图片:', blog.id, blog.images);
+  
+  if (!blog.images) {
+    console.log('搜索博客无images字段:', blog.id);
+    return null;
+  }
   
   try {
     const images = typeof blog.images === 'string' 
       ? JSON.parse(blog.images) 
       : blog.images;
     
+    console.log('解析后的images:', images);
+    
     if (Array.isArray(images) && images.length > 0) {
-      return images[0];
+      const imageUrl = images[0];
+      // 确保URL是完整的访问路径
+      const fullUrl = imageUrl.startsWith('http') ? imageUrl : `http://localhost:8080${imageUrl}`;
+      console.log('返回图片URL:', fullUrl);
+      return fullUrl;
     }
   } catch (error) {
-    console.error('解析图片数据失败:', error);
+    console.error('解析图片数据失败:', error, blog.images);
   }
   
   return null;
 };
 
+// 获取标签数组
+const getTagsArray = (tags) => {
+  if (!tags) return []
+  
+  try {
+    // 如果是JSON字符串格式，先解析
+    if (typeof tags === 'string') {
+      // 检查是否是JSON数组格式
+      if (tags.startsWith('[') && tags.endsWith(']')) {
+        const parsed = JSON.parse(tags)
+        return Array.isArray(parsed) ? parsed.filter(tag => tag && tag.trim()) : []
+      }
+      // 否则按逗号分割
+      return tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+    }
+    
+    // 如果已经是数组
+    if (Array.isArray(tags)) {
+      return tags.filter(tag => tag && tag.trim())
+    }
+  } catch (error) {
+    console.error('解析标签数据失败:', error)
+  }
+  
+  return []
+}
 
 </script>
 
@@ -167,6 +204,7 @@ const getFirstImage = (blog) => {
 
 .loading-container {
   background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 15px;
   padding: 3rem;

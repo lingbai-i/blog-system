@@ -7,6 +7,7 @@ import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import Search from '../views/Search.vue'
 import Articles from '../views/Articles.vue'
+import Publish from '../views/Publish.vue'
 
 // 路由配置
 const routes = [
@@ -75,6 +76,22 @@ const routes = [
     path: '/articles',
     name: 'Articles',
     component: () => import('../views/Articles.vue')
+  },
+  {
+    path: '/publish',
+    name: 'Publish',
+    component: () => import('../views/Publish.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/announcements',
+    name: 'Announcements',
+    component: () => import('../views/Announcements.vue')
+  },
+  {
+    path: '/announcements/:id',
+    name: 'AnnouncementDetail',
+    component: () => import('../views/AnnouncementDetail.vue')
   }
 ]
 

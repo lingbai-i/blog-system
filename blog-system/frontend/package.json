@@ -11,9 +11,15 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",
+    "@types/markdown-it": "^14.1.2",
+    "@vueup/vue-quill": "^1.2.0",
     "axios": "^1.6.0",
     "echarts": "^5.6.0",
     "element-plus": "^2.4.0",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "quill": "^2.0.3",
+    "turndown": "^7.2.0",
     "vue": "^3.4.0",
     "vue-router": "^4.2.0"
   },

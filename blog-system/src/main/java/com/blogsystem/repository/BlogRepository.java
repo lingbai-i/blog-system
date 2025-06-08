@@ -124,6 +124,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
        // 统计用户发布的文章数量
        long countByAuthorNameAndIsPublished(String authorName, boolean isPublished);
 
+       // 统计用户在指定时间范围内发布的文章数量
+       long countByAuthorNameAndIsPublishedAndCreatedAtBetween(String authorName, boolean isPublished, LocalDateTime startDate, LocalDateTime endDate);
+
        // 获取用户文章的总浏览量
        @Query("SELECT SUM(b.viewCount) FROM Blog b WHERE b.authorName = :authorName AND b.isPublished = true")
        Long sumViewCountByAuthorName(@Param("authorName") String authorName);

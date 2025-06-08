@@ -116,75 +116,17 @@
 
             <!-- 写文章 -->
             <div v-if="activeMenu === 'create-blog'" class="content-section">
-              <h2>{{ editingBlog ? '编辑文章' : '写新文章' }}</h2>
-              <el-form
-                ref="blogFormRef"
-                :model="blogForm"
-                :rules="blogRules"
-                label-width="80px"
-                class="blog-form"
-              >
-                <el-form-item label="标题" prop="title">
-                  <el-input v-model="blogForm.title" placeholder="请输入文章标题" />
-                </el-form-item>
-                <el-form-item label="摘要" prop="summary">
-                  <el-input
-                    v-model="blogForm.summary"
-                    type="textarea"
-                    :rows="3"
-                    placeholder="请输入文章摘要"
-                  />
-                </el-form-item>
-                <el-form-item label="分类" prop="category">
-                  <el-input v-model="blogForm.category" placeholder="请输入文章分类" />
-                </el-form-item>
-                <el-form-item label="标签" prop="tags">
-                  <el-input v-model="blogForm.tags" placeholder="请输入标签，用逗号分隔" />
-                </el-form-item>
-                <el-form-item label="文章图片">
-                  <div class="article-images">
-                    <div class="image-upload-area">
-                      <el-upload
-                        :action="'/api/upload/article-image'"
-                        :headers="uploadHeaders"
-                        :file-list="articleImageList"
-                        :on-success="handleArticleImageSuccess"
-                        :on-error="handleArticleImageError"
-                        :on-remove="handleArticleImageRemove"
-                        :before-upload="beforeArticleImageUpload"
-                        :limit="9"
-                        :on-exceed="handleExceed"
-                        name="file"
-                        accept="image/*"
-                        list-type="picture-card"
-                        multiple
-                      >
-                        <el-icon class="avatar-uploader-icon"><Plus /></el-icon>
-                      </el-upload>
-                      <div class="upload-tip">
-                        <p>支持上传jpg、png、gif格式图片，单张图片不超过2MB，最多9张</p>
-                      </div>
-                    </div>
-                  </div>
-                </el-form-item>
-                <el-form-item label="内容" prop="content">
-                  <el-input
-                    v-model="blogForm.content"
-                    type="textarea"
-                    :rows="15"
-                    placeholder="请输入文章内容（支持 Markdown）"
-                  />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" @click="saveBlog(false)" :loading="saving">
-                    保存草稿
+              <div class="redirect-section">
+                <div class="redirect-card">
+                  <el-icon class="redirect-icon"><EditPen /></el-icon>
+                  <h2>写新文章</h2>
+                  <p>点击下方按钮跳转到专业的文章编辑页面</p>
+                  <el-button type="primary" size="large" @click="goToPublish">
+                    <el-icon><EditPen /></el-icon>
+                    开始写作
                   </el-button>
-                  <el-button type="success" @click="saveBlog(true)" :loading="saving">
-                    发布文章
-                  </el-button>
-                  <el-button @click="cancelEdit">取消</el-button>
-                </el-form-item>
-              </el-form>
+                </div>
+              </div>
             </div>
 
             <!-- 个人统计 -->
@@ -310,6 +252,8 @@
                     <el-empty description="还没有点赞任何文章" />
                   </div>
                 </div>
+                
+
               </div>
             </div>
 
@@ -421,10 +365,7 @@ import axios from 'axios'
 const router = useRouter()
 const activeMenu = ref('my-blogs')
 const loading = ref(false)
-const saving = ref(false)
-const blogFormRef = ref()
 const profileFormRef = ref()
-const editingBlog = ref(null)
 const updatingProfile = ref(false)
 
 // 用户信息
@@ -498,31 +439,9 @@ const likeStats = reactive({
 // 我点赞的文章列表
 const likedArticles = ref([])
 
-// 文章表单
-const blogForm = reactive({
-  title: '',
-  summary: '',
-  content: '',
-  category: '',
-  tags: '',
-  images: []
-})
 
-// 文章图片列表
-const articleImageList = ref([])
 
-// 表单验证规则
-const blogRules = {
-  title: [
-    { required: true, message: '请输入文章标题', trigger: 'blur' }
-  ],
-  summary: [
-    { required: true, message: '请输入文章摘要', trigger: 'blur' }
-  ],
-  content: [
-    { required: true, message: '请输入文章内容', trigger: 'blur' }
-  ]
-}
+
 
 // 菜单选择
 const handleMenuSelect = (index) => {
@@ -613,77 +532,16 @@ const fetchMyBlogs = async () => {
   }
 }
 
-// 编辑文章
+// 编辑文章 - 跳转到发布页面
 const editBlog = (blog) => {
-  editingBlog.value = blog
-  
-  // 解析图片数据
-  let images = []
-  if (blog.images) {
-    try {
-      images = JSON.parse(blog.images)
-    } catch (error) {
-      console.warn('解析图片数据失败:', error)
-      images = []
-    }
-  }
-  
-  Object.assign(blogForm, {
-    title: blog.title,
-    summary: blog.summary,
-    content: blog.content,
-    category: blog.category,
-    tags: blog.tags,
-    images: images
-  })
-  
-  // 设置图片列表显示
-  articleImageList.value = images.map((url, index) => ({
-    name: `image_${index + 1}`,
-    url: url,
-    uid: Date.now() + index
-  }))
-  
-  activeMenu.value = 'create-blog'
+  // 将文章数据存储到sessionStorage，供Publish页面使用
+  sessionStorage.setItem('editingBlog', JSON.stringify(blog))
+  router.push('/publish')
 }
 
-// 保存文章
-const saveBlog = async (publish = false) => {
-  if (!blogFormRef.value) return
-  
-  try {
-    await blogFormRef.value.validate()
-    saving.value = true
-    
-    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
-    const config = token ? {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    } : {}
-    
-    const blogData = {
-      ...blogForm,
-      images: JSON.stringify(blogForm.images),
-      isPublished: publish
-    }
-    
-    if (editingBlog.value) {
-      await axios.put(`/api/blogs/${editingBlog.value.id}`, blogData, config)
-      ElMessage.success('文章更新成功')
-    } else {
-      await axios.post('/api/blogs', blogData, config)
-      ElMessage.success(publish ? '文章发布成功' : '草稿保存成功')
-    }
-    
-    resetBlogForm()
-    activeMenu.value = 'my-blogs'
-    fetchMyBlogs()
-  } catch (error) {
-    ElMessage.error('保存失败，请稍后重试')
-  } finally {
-    saving.value = false
-  }
+// 跳转到发布页面
+const goToPublish = () => {
+  router.push('/publish')
 }
 
 // 切换发布状态
@@ -729,25 +587,9 @@ const deleteBlog = async (blog) => {
   }
 }
 
-// 取消编辑
-const cancelEdit = () => {
-  resetBlogForm()
-  activeMenu.value = 'my-blogs'
-}
 
-// 重置表单
-const resetBlogForm = () => {
-  Object.assign(blogForm, {
-    title: '',
-    summary: '',
-    content: '',
-    category: '',
-    tags: '',
-    images: []
-  })
-  articleImageList.value = []
-  editingBlog.value = null
-}
+
+
 
 // 更新个人资料
 const updateProfile = async () => {
@@ -805,6 +647,8 @@ const formatDate = (date) => {
   const d = new Date(date)
   return d.toLocaleDateString('zh-CN')
 }
+
+
 
 // 头像上传前的验证
 const beforeAvatarUpload = (file) => {
@@ -875,71 +719,7 @@ const removeAvatar = async () => {
   }
 }
 
-// 文章图片上传前的验证
-const beforeArticleImageUpload = (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
 
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('上传图片大小不能超过 2MB!')
-    return false
-  }
-  return true
-}
-
-// 文章图片上传成功
-const handleArticleImageSuccess = (response, file) => {
-  if (response.success && response.url) {
-    // 确保URL包含完整的服务器地址
-    const imageUrl = response.url.startsWith('http') ? response.url : `http://localhost:8080${response.url}`
-    blogForm.images.push(imageUrl)
-    // 更新文件列表显示
-    file.url = imageUrl
-    ElMessage.success('图片上传成功')
-  } else {
-    ElMessage.error(response.message || '图片上传失败')
-  }
-}
-
-// 文章图片上传失败
-const handleArticleImageError = (error) => {
-  console.error('图片上传失败:', error)
-  ElMessage.error('图片上传失败，请稍后重试')
-}
-
-// 删除文章图片
-const handleArticleImageRemove = (file) => {
-  if (file.url) {
-    const index = blogForm.images.indexOf(file.url)
-    if (index > -1) {
-      blogForm.images.splice(index, 1)
-    }
-    
-    // 尝试删除服务器上的文件
-    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
-    const config = token ? {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    } : {}
-    
-    axios.delete('/api/upload/delete', {
-      ...config,
-      data: { url: file.url }
-    }).catch(error => {
-      console.warn('删除服务器文件失败:', error)
-    })
-  }
-}
-
-// 超出文件数量限制
-const handleExceed = () => {
-  ElMessage.warning('最多只能上传9张图片')
-}
 
 // 获取个人统计数据
 const fetchStatistics = async () => {
@@ -1279,6 +1059,103 @@ onMounted(() => {
   color: #6c757d;
 }
 
+/* 标签统计样式 */
+.tag-usage-list {
+  margin-top: 1.5rem;
+}
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.tag-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+
+.tag-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: #409eff;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tag-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tag-name {
+  display: block;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.tag-description {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-usage {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 120px;
+}
+
+.usage-bar {
+  flex: 1;
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #409eff, #67c23a);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.usage-count {
+  font-size: 0.85rem;
+  color: #666;
+  white-space: nowrap;
+}
+
+.empty-tags {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+}
+
 @media (max-width: 768px) {
   .dashboard-content {
     flex-direction: column;
@@ -1353,5 +1230,51 @@ onMounted(() => {
   height: 100px;
   text-align: center;
   line-height: 100px;
+}
+
+/* 跳转页面样式 */
+.redirect-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.redirect-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
+  max-width: 400px;
+  width: 100%;
+}
+
+.redirect-icon {
+  font-size: 48px;
+  color: #409eff;
+  margin-bottom: 1rem;
+}
+
+.redirect-card h2 {
+  color: #303133;
+  margin-bottom: 1rem;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.redirect-card p {
+  color: #606266;
+  margin-bottom: 2rem;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.redirect-card .el-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 8px;
 }
 </style>

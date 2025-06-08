@@ -7,6 +7,7 @@
           <h1 class="logo" @click="goHome">文章详情</h1>
           <nav class="nav">
             <router-link to="/" class="nav-link">首页</router-link>
+            <router-link to="/announcements" class="nav-link">公告</router-link>
             <router-link to="/dashboard" class="nav-link">个人中心</router-link>
           </nav>
         </div>
@@ -65,6 +66,17 @@
                 <el-icon><Star /></el-icon>
                 {{ blog.likeCount || 0 }} 点赞
               </span>
+            </div>
+            <!-- 标签显示 -->
+            <div class="article-tags" v-if="blog.tags && getTagsArray(blog.tags).length > 0">
+              <el-tag
+                v-for="tag in getTagsArray(blog.tags)"
+                :key="tag"
+                size="small"
+                class="tag"
+              >
+                {{ tag.trim() }}
+              </el-tag>
             </div>
           </header>
 
@@ -520,6 +532,33 @@ watch(blog, (newBlog) => {
   }
 }, { immediate: true })
 
+// 获取标签数组
+const getTagsArray = (tags) => {
+  if (!tags) return []
+  
+  try {
+    // 如果是JSON字符串格式，先解析
+    if (typeof tags === 'string') {
+      // 检查是否是JSON数组格式
+      if (tags.startsWith('[') && tags.endsWith(']')) {
+        const parsed = JSON.parse(tags)
+        return Array.isArray(parsed) ? parsed.filter(tag => tag && tag.trim()) : []
+      }
+      // 否则按逗号分割
+      return tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+    }
+    
+    // 如果已经是数组
+    if (Array.isArray(tags)) {
+      return tags.filter(tag => tag && tag.trim())
+    }
+  } catch (error) {
+    console.error('解析标签数据失败:', error)
+  }
+  
+  return []
+}
+
 onMounted(() => {
   fetchBlog()
 })
@@ -807,6 +846,30 @@ onMounted(() => {
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 标签样式 */
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tag {
+  background: linear-gradient(45deg, #409eff, #67c23a) !important;
+  border: none !important;
+  color: white !important;
+  border-radius: 16px !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.tag:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3) !important;
 }
 
 /* 文章内容中的图片样式优化 */

@@ -37,8 +37,8 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     // 统计激活的标签数量
     long countByIsActiveTrue();
 
-    // 查询标签及其博客数量
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = true GROUP BY t ORDER BY t.name ASC")
+    // 查询标签及其博客数量（只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = true AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY t.name ASC")
     List<Object[]> findTagsWithBlogCount();
 
     // 查询有博客的标签
@@ -46,40 +46,40 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     List<Tag> findTagsWithPublishedBlogs();
 
     // 查询热门标签（按博客数量排序）
-    @Query("SELECT t FROM Tag t JOIN t.blogs b WHERE t.isActive = true AND b.isPublished = true GROUP BY t ORDER BY COUNT(b) DESC")
-    List<Tag> findPopularTags(Pageable pageable);
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = true AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
+    List<Object[]> findPopularTags(Pageable pageable);
 
-    // 查询所有标签并按博客数量排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
+    // 查询所有标签并按博客数量排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
     Page<Object[]> findAllTagsWithBlogCountOrderByUsageDesc(Pageable pageable);
 
-    // 查询所有标签并按博客数量升序排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
+    // 查询所有标签并按博客数量升序排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
     Page<Object[]> findAllTagsWithBlogCountOrderByUsageAsc(Pageable pageable);
 
-    // 根据状态查询标签并按博客数量排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = :isActive GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
+    // 根据状态查询标签并按博客数量排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = :isActive AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
     Page<Object[]> findTagsByStatusWithBlogCountOrderByUsageDesc(Boolean isActive, Pageable pageable);
 
-    // 根据状态查询标签并按博客数量升序排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = :isActive GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
+    // 根据状态查询标签并按博客数量升序排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.isActive = :isActive AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
     Page<Object[]> findTagsByStatusWithBlogCountOrderByUsageAsc(Boolean isActive, Pageable pageable);
 
-    // 搜索标签并按博客数量排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
+    // 搜索标签并按博客数量排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
     Page<Object[]> findTagsByKeywordWithBlogCountOrderByUsageDesc(String keyword, Pageable pageable);
 
-    // 搜索标签并按博客数量升序排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
+    // 搜索标签并按博客数量升序排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
     Page<Object[]> findTagsByKeywordWithBlogCountOrderByUsageAsc(String keyword, Pageable pageable);
 
-    // 根据关键词和状态搜索标签并按博客数量排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND t.isActive = :isActive GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
+    // 根据关键词和状态搜索标签并按博客数量排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND t.isActive = :isActive AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) DESC, t.createdAt DESC")
     Page<Object[]> findTagsByKeywordAndStatusWithBlogCountOrderByUsageDesc(String keyword, Boolean isActive,
             Pageable pageable);
 
-    // 根据关键词和状态搜索标签并按博客数量升序排序（支持分页）
-    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND t.isActive = :isActive GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
+    // 根据关键词和状态搜索标签并按博客数量升序排序（支持分页，只统计已发布的博客）
+    @Query("SELECT t, COUNT(b) as blogCount FROM Tag t LEFT JOIN t.blogs b WHERE t.name LIKE %:keyword% AND t.isActive = :isActive AND (b IS NULL OR b.isPublished = true) GROUP BY t ORDER BY COUNT(b) ASC, t.createdAt DESC")
     Page<Object[]> findTagsByKeywordAndStatusWithBlogCountOrderByUsageAsc(String keyword, Boolean isActive,
             Pageable pageable);
 }

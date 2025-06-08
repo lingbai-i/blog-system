@@ -36,6 +36,7 @@
             <el-input
               v-model="loginForm.username"
               placeholder="用户名"
+              aria-label="用户名"
               size="large"
               :prefix-icon="User"
               clearable
@@ -47,6 +48,7 @@
               v-model="loginForm.password"
               type="password"
               placeholder="密码"
+              aria-label="密码"
               size="large"
               :prefix-icon="Lock"
               show-password
@@ -339,6 +341,7 @@ onMounted(() => {
   border-radius: 20px;
   padding: 2.5rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
