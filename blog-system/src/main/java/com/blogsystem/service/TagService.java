@@ -50,9 +50,9 @@ public class TagService {
             }
 
             tag.setName(tagDetails.getName());
-            tag.setDescription(tagDetails.getDescription());
-            tag.setColorCode(tagDetails.getColorCode());
-            tag.setIsActive(tagDetails.getIsActive());
+        tag.setDescription(tagDetails.getDescription());
+        tag.setColorCode(tagDetails.getColorCode());
+        tag.setIsActive(tagDetails.getIsActive());
 
             return tagRepository.save(tag);
         }

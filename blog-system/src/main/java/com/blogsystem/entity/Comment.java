@@ -47,4 +47,12 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Comment parent;
+    
+    // 被回复的用户名，用于多级回复显示
+    @Column(name = "reply_to_name", length = 100)
+    private String replyToName;
+    
+    // 评论图片列表，JSON格式存储
+    @Column(name = "images", columnDefinition = "TEXT")
+    private String images;
 }

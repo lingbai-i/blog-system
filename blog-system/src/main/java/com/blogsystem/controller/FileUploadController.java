@@ -50,6 +50,14 @@ public class FileUploadController {
     }
 
     /**
+     * 通用图片上传接口（用于评论等场景）
+     */
+    @PostMapping("/image")
+    public ResponseEntity<Map<String, Object>> uploadImage(@RequestParam("file") MultipartFile file) {
+        return uploadSingleImage(file, "comments");
+    }
+
+    /**
      * 批量上传文章图片（最多9张）
      */
     @PostMapping("/article-images")

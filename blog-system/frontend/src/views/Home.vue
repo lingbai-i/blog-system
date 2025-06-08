@@ -50,6 +50,10 @@
                     <el-icon><User /></el-icon>
                     个人中心
                   </el-dropdown-item>
+                  <el-dropdown-item @click="handleSwitchAccount">
+                    <el-icon><RefreshRight /></el-icon>
+                    切换账号
+                  </el-dropdown-item>
                   <el-dropdown-item divided @click="handleLogout">
                     <el-icon><SwitchButton /></el-icon>
                     退出
@@ -88,6 +92,10 @@
                     <el-dropdown-item v-else @click="goToUserCenter">
                       <el-icon><User /></el-icon>
                       个人中心
+                    </el-dropdown-item>
+                    <el-dropdown-item @click="handleSwitchAccount">
+                      <el-icon><RefreshRight /></el-icon>
+                      切换账号
                     </el-dropdown-item>
                     <el-dropdown-item divided @click="handleLogout">
                       <el-icon><SwitchButton /></el-icon>
@@ -535,7 +543,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete, ChatDotRound, UserFilled, Setting, SwitchButton, House, Document, Bell } from '@element-plus/icons-vue'
+import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete, ChatDotRound, UserFilled, Setting, SwitchButton, House, Document, Bell, RefreshRight } from '@element-plus/icons-vue'
 import axios from 'axios'
 import AnnouncementBanner from '../components/AnnouncementBanner.vue'
 
@@ -918,6 +926,20 @@ const checkLoginStatus = async () => {
 }
 
 
+
+// 处理切换账号
+const handleSwitchAccount = () => {
+  localStorage.removeItem('userToken')
+  localStorage.removeItem('adminToken')
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('username')
+  isLoggedIn.value = false
+  username.value = ''
+  userRole.value = ''
+  userAvatar.value = ''
+  // 跳转到登录页面
+  router.push('/login')
+}
 
 // 处理注销
 const handleLogout = () => {

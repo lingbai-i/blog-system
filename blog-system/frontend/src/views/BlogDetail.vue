@@ -175,12 +175,8 @@ const currentPreviewImage = ref('')
 const formattedContent = computed(() => {
   if (!blog.value?.content) return ''
   
-  // 简单的内容格式化，将换行转换为段落
-  let content = blog.value.content
-    .split('\n')
-    .filter(line => line.trim())
-    .map(line => `<p>${line}</p>`)
-    .join('')
+  // 直接使用原始内容，保持换行格式
+  let content = blog.value.content.replace(/\n/g, '<br>')
   
   // 如果有图片，在内容后面添加图片
   if (blog.value.images) {

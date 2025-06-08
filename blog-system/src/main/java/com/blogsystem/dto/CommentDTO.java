@@ -25,6 +25,8 @@ public class CommentDTO {
     private LocalDateTime createdAt;
     private Boolean isApproved;
     private Long parentId;
+    private String replyToName; // 被回复的用户名
+    private String images; // 评论图片列表，JSON格式
     private List<CommentDTO> replies;
 
     // 从Comment实体转换为DTO的静态方法
@@ -41,6 +43,8 @@ public class CommentDTO {
         dto.setCreatedAt(comment.getCreatedAt());
         dto.setIsApproved(comment.getIsApproved());
         dto.setParentId(comment.getParent() != null ? comment.getParent().getId() : null);
+        dto.setReplyToName(comment.getReplyToName()); // 设置被回复的用户名
+        dto.setImages(comment.getImages()); // 设置图片列表
         return dto;
     }
 

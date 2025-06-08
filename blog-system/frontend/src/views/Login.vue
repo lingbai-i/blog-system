@@ -25,6 +25,41 @@
           </el-radio-group>
         </div>
 
+        <!-- 账号历史记录 -->
+        <div v-if="accountHistory.length > 0" class="account-history">
+          <div class="history-title">
+            <el-icon><Clock /></el-icon>
+            <span>选择已登录账号</span>
+          </div>
+          <div class="history-accounts">
+            <div
+              v-for="account in accountHistory"
+              :key="account.id"
+              class="history-account"
+              @click="selectHistoryAccount(account)"
+            >
+              <div class="account-avatar">
+                <el-icon><User /></el-icon>
+              </div>
+              <div class="account-info">
+                <div class="account-username">{{ account.username }}</div>
+                <div class="account-type">{{ account.type === 'admin' ? '管理员' : '普通用户' }}</div>
+              </div>
+              <div class="account-actions">
+                <el-button
+                  type="danger"
+                  size="small"
+                  text
+                  @click.stop="removeAccount(account.id)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+          </div>
+          <el-divider>或手动输入</el-divider>
+        </div>
+
         <el-form
           ref="loginFormRef"
           :model="loginForm"
@@ -94,7 +129,7 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { User, Lock, ArrowLeft } from "@element-plus/icons-vue";
+import { User, Lock, ArrowLeft, Clock, Delete } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 
@@ -105,12 +140,87 @@ const loading = ref(false);
 // 登录类型
 const loginType = ref("user");
 
+// 账号历史记录
+const accountHistory = ref([]);
+
 // 表单数据
 const loginForm = reactive({
   username: "",
   password: "",
   rememberMe: false,
 });
+
+// 加载账号历史记录
+const loadAccountHistory = () => {
+  const history = localStorage.getItem('accountHistory');
+  if (history) {
+    try {
+      accountHistory.value = JSON.parse(history);
+    } catch (error) {
+      console.error('解析账号历史记录失败:', error);
+      accountHistory.value = [];
+    }
+  }
+};
+
+// 保存账号到历史记录
+const saveAccountToHistory = (username, type, token) => {
+  const account = {
+    id: Date.now().toString(),
+    username,
+    type,
+    token,
+    lastLoginTime: new Date().toISOString()
+  };
+  
+  // 移除已存在的相同账号
+  accountHistory.value = accountHistory.value.filter(
+    acc => !(acc.username === username && acc.type === type)
+  );
+  
+  // 添加到开头
+  accountHistory.value.unshift(account);
+  
+  // 最多保存5个账号
+  if (accountHistory.value.length > 5) {
+    accountHistory.value = accountHistory.value.slice(0, 5);
+  }
+  
+  // 保存到localStorage
+  localStorage.setItem('accountHistory', JSON.stringify(accountHistory.value));
+};
+
+// 选择历史账号
+const selectHistoryAccount = (account) => {
+  loginType.value = account.type;
+  
+  // 直接使用保存的token登录
+  if (account.type === 'admin') {
+    localStorage.setItem('adminToken', account.token);
+    localStorage.setItem('userRole', 'admin');
+  } else {
+    localStorage.setItem('userToken', account.token);
+    localStorage.setItem('userRole', 'user');
+  }
+  
+  localStorage.setItem('username', account.username);
+  
+  ElMessage.success(`欢迎回来，${account.username}！`);
+  
+  // 根据角色跳转到不同页面
+  if (account.type === 'admin') {
+    router.push('/admin');
+  } else {
+    router.push('/');
+  }
+};
+
+// 移除账号
+const removeAccount = (accountId) => {
+  accountHistory.value = accountHistory.value.filter(acc => acc.id !== accountId);
+  localStorage.setItem('accountHistory', JSON.stringify(accountHistory.value));
+  ElMessage.success('账号已移除');
+};
 
 // 表单验证规则
 const loginRules = {
@@ -165,6 +275,13 @@ const handleLogin = async () => {
           userInfo.username || loginForm.username
         );
 
+        // 保存账号到历史记录
+        saveAccountToHistory(
+          userInfo.username || loginForm.username,
+          loginType.value,
+          token
+        );
+
         if (loginForm.rememberMe) {
           localStorage.setItem("rememberedUsername", loginForm.username);
         } else {
@@ -198,6 +315,10 @@ const handleLogin = async () => {
         localStorage.setItem("adminToken", mockToken);
         localStorage.setItem("userRole", "admin");
         localStorage.setItem("username", "admin");
+        
+        // 保存账号到历史记录
+        saveAccountToHistory("admin", "admin", mockToken);
+        
         loginSuccess = true;
         router.push("/admin");
       } else if (
@@ -210,6 +331,10 @@ const handleLogin = async () => {
         localStorage.setItem("userToken", mockToken);
         localStorage.setItem("userRole", "user");
         localStorage.setItem("username", "user");
+        
+        // 保存账号到历史记录
+        saveAccountToHistory("user", "user", mockToken);
+        
         loginSuccess = true;
         router.push("/");
       }
@@ -244,6 +369,9 @@ const goToRegister = () => {
 
 // 组件挂载时检查是否有记住的用户名
 onMounted(() => {
+  // 加载账号历史记录
+  loadAccountHistory();
+  
   const rememberedUsername = localStorage.getItem("rememberedUsername");
   if (rememberedUsername) {
     loginForm.username = rememberedUsername;
@@ -430,6 +558,85 @@ onMounted(() => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* 账号历史记录样式 */
+.account-history {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.history-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.history-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.history-account {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.history-account:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  transform: translateY(-1px);
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-right: 0.75rem;
+}
+
+.account-info {
+  flex: 1;
+}
+
+.account-username {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.account-type {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.account-actions {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.history-account:hover .account-actions {
+  opacity: 1;
 }
 
 .login-form {

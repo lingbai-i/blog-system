@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS comments (
     author_email VARCHAR(100) NOT NULL COMMENT '评论者邮箱',
     author_website VARCHAR(255) COMMENT '评论者网站',
     content TEXT NOT NULL COMMENT '评论内容',
+    images TEXT COMMENT '评论图片列表，JSON格式存储',
+    reply_to_name VARCHAR(100) COMMENT '被回复的用户名',
     is_approved BOOLEAN DEFAULT FALSE COMMENT '是否审核通过',
     ip_address VARCHAR(45) COMMENT 'IP地址',
     user_agent TEXT COMMENT '用户代理',

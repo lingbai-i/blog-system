@@ -28,6 +28,10 @@
                     <el-icon><EditPen /></el-icon>
                     发布文章
                   </el-dropdown-item>
+                  <el-dropdown-item @click="handleSwitchAccount">
+                    <el-icon><RefreshRight /></el-icon>
+                    切换账号
+                  </el-dropdown-item>
                   <el-dropdown-item divided @click="handleLogout">
                     <el-icon><SwitchButton /></el-icon>
                     退出
@@ -347,6 +351,7 @@ import {
   SwitchButton,
   EditPen,
   House,
+  RefreshRight,
 } from "@element-plus/icons-vue";
 
 const router = useRouter();
@@ -648,6 +653,18 @@ const goToUserCenter = () => {
 
 const goToPublish = () => {
   router.push('/publish')
+}
+
+const handleSwitchAccount = () => {
+  // 清除登录状态
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('userToken')
+  localStorage.removeItem('adminToken')
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('username')
+  ElMessage.success('切换账号成功')
+  router.push('/login')
 }
 
 const handleLogout = () => {

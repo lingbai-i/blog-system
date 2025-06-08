@@ -40,6 +40,7 @@ public class CommentController {
             
             Long blogId = Long.valueOf(request.get("blogId").toString());
             String content = request.get("content").toString();
+            String images = request.containsKey("images") ? request.get("images").toString() : null;
             String authorName = "匿名用户";
             String authorEmail = "";
 
@@ -62,7 +63,7 @@ public class CommentController {
                 }
             }
 
-            Comment comment = commentService.createComment(blogOpt.get(), user, content, authorName, authorEmail);
+            Comment comment = commentService.createComment(blogOpt.get(), user, content, authorName, authorEmail, images);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -92,8 +93,10 @@ public class CommentController {
             Long blogId = Long.valueOf(request.get("blogId").toString());
             Long parentId = Long.valueOf(request.get("parentId").toString());
             String content = request.get("content").toString();
+            String images = request.containsKey("images") ? request.get("images").toString() : null;
             String authorName = "匿名用户";
             String authorEmail = "";
+            String replyToName = null; // 新增：被回复的用户名
 
             Optional<Blog> blogOpt = blogService.findById(blogId);
             Optional<Comment> parentOpt = commentService.findById(parentId);
@@ -115,9 +118,22 @@ public class CommentController {
                     authorEmail = user.getEmail() != null ? user.getEmail() : "";
                 }
             }
+            
+            // 获取被回复的用户名
+            if (request.containsKey("replyToName") && request.get("replyToName") != null) {
+                replyToName = request.get("replyToName").toString();
+            }
 
-            Comment reply = commentService.createReply(blogOpt.get(), user, parentOpt.get(), content, authorName,
-                    authorEmail);
+            Comment reply;
+            if (replyToName != null) {
+                // 使用支持多级回复的方法
+                reply = commentService.createReply(blogOpt.get(), user, parentOpt.get(), content, authorName,
+                        authorEmail, replyToName, images);
+            } else {
+                // 使用原有的方法
+                reply = commentService.createReply(blogOpt.get(), user, parentOpt.get(), content, authorName,
+                        authorEmail, images);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);

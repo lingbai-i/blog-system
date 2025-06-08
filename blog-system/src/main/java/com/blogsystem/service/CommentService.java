@@ -38,6 +38,20 @@ public class CommentService {
 
         return commentRepository.save(comment);
     }
+    
+    // 创建评论（支持图片）
+    public Comment createComment(Blog blog, User user, String content, String authorName, String authorEmail, String images) {
+        Comment comment = new Comment();
+        comment.setBlog(blog);
+        comment.setUser(user);
+        comment.setContent(content);
+        comment.setAuthorName(authorName);
+        comment.setAuthorEmail(authorEmail);
+        comment.setImages(images);
+        comment.setIsApproved(true); // 直接通过，无需审核
+
+        return commentRepository.save(comment);
+    }
 
     // 创建回复评论
     public Comment createReply(Blog blog, User user, Comment parent, String content, String authorName,
@@ -49,6 +63,55 @@ public class CommentService {
         reply.setContent(content);
         reply.setAuthorName(authorName);
         reply.setAuthorEmail(authorEmail);
+        reply.setIsApproved(true); // 直接通过，无需审核
+
+        return commentRepository.save(reply);
+    }
+    
+    // 创建回复评论（支持图片）
+    public Comment createReplyWithImages(Blog blog, User user, Comment parent, String content, String authorName,
+            String authorEmail, String images) {
+        Comment reply = new Comment();
+        reply.setBlog(blog);
+        reply.setUser(user);
+        reply.setParent(parent);
+        reply.setContent(content);
+        reply.setAuthorName(authorName);
+        reply.setAuthorEmail(authorEmail);
+        reply.setImages(images);
+        reply.setIsApproved(true); // 直接通过，无需审核
+
+        return commentRepository.save(reply);
+    }
+    
+    // 创建回复评论（支持多级回复）
+    public Comment createReply(Blog blog, User user, Comment parent, String content, String authorName,
+            String authorEmail, String replyToName) {
+        Comment reply = new Comment();
+        reply.setBlog(blog);
+        reply.setUser(user);
+        reply.setParent(parent);
+        reply.setContent(content);
+        reply.setAuthorName(authorName);
+        reply.setAuthorEmail(authorEmail);
+        reply.setReplyToName(replyToName);
+        reply.setIsApproved(true); // 直接通过，无需审核
+
+        return commentRepository.save(reply);
+    }
+    
+    // 创建回复评论（支持多级回复和图片）
+    public Comment createReply(Blog blog, User user, Comment parent, String content, String authorName,
+            String authorEmail, String replyToName, String images) {
+        Comment reply = new Comment();
+        reply.setBlog(blog);
+        reply.setUser(user);
+        reply.setParent(parent);
+        reply.setContent(content);
+        reply.setAuthorName(authorName);
+        reply.setAuthorEmail(authorEmail);
+        reply.setReplyToName(replyToName);
+        reply.setImages(images);
         reply.setIsApproved(true); // 直接通过，无需审核
 
         return commentRepository.save(reply);

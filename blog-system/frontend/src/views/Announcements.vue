@@ -28,6 +28,10 @@
                     <el-icon><EditPen /></el-icon>
                     发布文章
                   </el-dropdown-item>
+                  <el-dropdown-item @click="handleSwitchAccount">
+                    <el-icon><RefreshRight /></el-icon>
+                    切换账号
+                  </el-dropdown-item>
                   <el-dropdown-item divided @click="handleLogout">
                     <el-icon><SwitchButton /></el-icon>
                     退出
@@ -112,7 +116,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage, ElSkeleton, ElEmpty, ElButton, ElIcon, ElDropdown, ElDropdownMenu, ElDropdownItem, ElAvatar } from 'element-plus'
-import { Top, ArrowRight, UserFilled, User, EditPen, SwitchButton, House } from '@element-plus/icons-vue'
+import { Top, ArrowRight, UserFilled, User, EditPen, SwitchButton, House, RefreshRight } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const announcements = ref([])
@@ -201,6 +205,18 @@ const goToUserCenter = () => {
 
 const goToPublish = () => {
   router.push('/publish')
+}
+
+const handleSwitchAccount = () => {
+  // 清除登录状态
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('userToken')
+  localStorage.removeItem('adminToken')
+  localStorage.removeItem('userRole')
+  localStorage.removeItem('username')
+  ElMessage.success('切换账号成功')
+  router.push('/login')
 }
 
 const handleLogout = () => {

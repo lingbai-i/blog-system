@@ -1,13 +1,12 @@
 <template>
   <div id="app">
     <router-view />
+    <BackToTop />
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App'
-}
+<script setup>
+import BackToTop from './components/BackToTop.vue'
 </script>
 
 <style>
