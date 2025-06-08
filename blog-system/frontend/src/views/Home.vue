@@ -2151,6 +2151,7 @@ onMounted(async () => {
   color: white;
   padding: 20px 24px;
   margin: 0;
+  border-radius: 12px 12px 12px 12px;
 }
 
 :deep(.search-dialog .el-dialog__title) {
@@ -2173,6 +2174,7 @@ onMounted(async () => {
   border: none;
   box-shadow: none;
   opacity: 0.6;
+  margin-top: 4px;
 }
 
 :deep(.search-dialog .el-dialog__headerbtn .el-dialog__close:hover) {

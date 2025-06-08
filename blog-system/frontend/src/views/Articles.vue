@@ -9,32 +9,9 @@
 
         <div class="user-section">
           <template v-if="isLoggedIn">
-            <el-dropdown trigger="hover" placement="bottom-end">
-              <div class="user-info">
-                <el-avatar 
-                  :size="32" 
-                  :icon="UserFilled"
-                  class="user-avatar"
-                />
-                <span class="username">{{ username || '用户' }}</span>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="goToUserCenter">
-                    <el-icon><User /></el-icon>
-                    个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="goToPublish">
-                    <el-icon><EditPen /></el-icon>
-                    发布文章
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">
-                    <el-icon><SwitchButton /></el-icon>
-                    退出
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+            <div class="user-info">
+              <span class="username">欢迎，{{ username || '用户' }}</span>
+            </div>
           </template>
           <template v-else>
             <div class="auth-buttons">
@@ -386,18 +363,46 @@ const hasSearchCriteria = computed(() => {
 
 // 检查用户登录状态
 const isLoggedIn = computed(() => {
-  return localStorage.getItem('token') !== null;
+  const userToken = localStorage.getItem('userToken');
+  const adminToken = localStorage.getItem('adminToken');
+  return userToken !== null || adminToken !== null;
 });
 
 // 获取用户名
 const username = computed(() => {
-  const userInfo = localStorage.getItem('userInfo');
-  if (userInfo) {
-    const user = JSON.parse(userInfo);
-    return user.username || user.name || '用户';
-  }
-  return '用户';
+  const storedUsername = localStorage.getItem('username');
+  return storedUsername || '用户';
 });
+
+// 处理注销
+const handleLogout = () => {
+  localStorage.removeItem('userToken');
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('username');
+  location.reload();
+};
+
+// 导航方法
+const goToLogin = () => {
+  router.push('/login');
+};
+
+const goToRegister = () => {
+  router.push('/register');
+};
+
+const goToUserCenter = () => {
+  router.push('/user-dashboard');
+};
+
+const goToPublish = () => {
+  router.push('/publish');
+};
+
+const goHome = () => {
+  router.push('/');
+};
 
 
 
@@ -628,35 +633,6 @@ const goToArticleDetail = (id) => {
   console.log('文章列表页点击文章，ID:', id)
   router.push(`/blog/${id}`);
 };
-
-// 跳转到首页
-const goHome = () => {
-  router.push('/')
-}
-
-const goToLogin = () => {
-  router.push('/login')
-}
-
-const goToRegister = () => {
-  router.push('/register')
-}
-
-const goToUserCenter = () => {
-  router.push('/user-center')
-}
-
-const goToPublish = () => {
-  router.push('/publish')
-}
-
-const handleLogout = () => {
-  // 清除登录状态
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
-  ElMessage.success('退出成功')
-  router.push('/')
-}
 
 
 
@@ -1129,21 +1105,21 @@ const getTagsArray = (tags) => {
 }
 
 .search-input :deep(.el-input__wrapper) {
-  border-radius: 8px;
-  border: 2px solid #e4e7ed;
+  border-radius: 88px;
+  border: 2px solid transparent;
   background: white;
-  transition: all 0.3s ease;
+
   padding: 0 16px;
 }
 
 .search-input :deep(.el-input__wrapper:hover) {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .search-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #409eff;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .search-icon {
