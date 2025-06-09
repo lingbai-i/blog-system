@@ -304,8 +304,14 @@ const uploadImage = async (file) => {
     
     const result = await response.json()
     if (result.success) {
-      insertImageToEditor(result.data.url)
-      emit('image-uploaded', result.data.url)
+      // 适配实际的响应结构：{filename, size, success, message, url}
+      let imageUrl = result.url
+      if (imageUrl && imageUrl.startsWith('/')) {
+        // 如果是相对路径，添加服务器地址
+        imageUrl = `http://localhost:8080${imageUrl}`
+      }
+      insertImageToEditor(imageUrl)
+      emit('image-uploaded', imageUrl)
       ElMessage.success('图片上传成功')
     } else {
       ElMessage.error('图片上传失败：' + result.message)
@@ -327,8 +333,18 @@ const insertImageToEditor = (imageUrl) => {
 
 // 图片上传成功处理
 const handleImageSuccess = (response) => {
-  if (response.success) {
-    const imageUrl = response.data.url
+  console.log('Upload response:', response) // 调试日志
+  
+  // 适配实际的响应结构：{filename, size, success, message, url}
+  if (response && response.success && response.url) {
+    // 确保图片URL是完整的URL
+    let imageUrl = response.url
+    if (imageUrl.startsWith('/')) {
+      // 如果是相对路径，添加服务器地址
+      imageUrl = `http://localhost:8080${imageUrl}`
+    }
+    console.log('Final image URL:', imageUrl) // 调试日志
+    
     emit('image-uploaded', imageUrl)
     
     if (editorMode.value === 'markdown') {
@@ -357,7 +373,9 @@ const handleImageSuccess = (response) => {
     
     ElMessage.success('图片上传成功')
   } else {
-    ElMessage.error('图片上传失败：' + response.message)
+    console.error('Invalid response structure:', response)
+    const errorMessage = response && response.message ? response.message : '图片上传失败，响应格式错误'
+    ElMessage.error('图片上传失败：' + errorMessage)
   }
 }
 

@@ -9,6 +9,7 @@
 
         <div class="user-section">
           <template v-if="isLoggedIn">
+<<<<<<< HEAD
             <el-dropdown trigger="hover" placement="bottom-end">
               <div class="user-info">
                 <el-avatar 
@@ -39,6 +40,11 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
+=======
+            <div class="user-info">
+              <span class="username">欢迎，{{ username || '用户' }}</span>
+            </div>
+>>>>>>> afff5b40aa8bb315874e990f21b6e306ce2d5c92
           </template>
           <template v-else>
             <div class="auth-buttons">
@@ -173,17 +179,12 @@ const getPreview = (content) => {
 
 // 检查用户登录状态
 const isLoggedIn = computed(() => {
-  return localStorage.getItem('token') !== null
+  return localStorage.getItem('userToken') !== null || localStorage.getItem('adminToken') !== null
 })
 
 // 获取用户名
 const username = computed(() => {
-  const userInfo = localStorage.getItem('userInfo')
-  if (userInfo) {
-    const user = JSON.parse(userInfo)
-    return user.username || user.name || '用户'
-  }
-  return '用户'
+  return localStorage.getItem('username') || '用户'
 })
 
 // 导航方法
