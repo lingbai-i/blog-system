@@ -1,6 +1,6 @@
 # 个人博客系统 - 详细功能实现文档
 
-> 最后更新：2025年1月15日
+> 最后更新：2025年6月9日
 
 ## 目录
 
@@ -9,11 +9,15 @@
 3. [核心功能模块](#核心功能模块)
 4. [前端实现详情](#前端实现详情)
 5. [后端实现详情](#后端实现详情)
-6. [数据库设计](#数据库设计)
-7. [API接口文档](#api接口文档)
-8. [安全机制](#安全机制)
-9. [文件管理](#文件管理)
-10. [性能优化](#性能优化)
+6. [公告系统](#公告系统)
+7. [数据库设计](#数据库设计)
+8. [API接口文档](#api接口文档)
+9. [安全机制](#安全机制)
+10. [管理员功能](#管理员功能)
+11. [用户统计系统](#用户统计系统)
+12. [点赞系统](#点赞系统)
+13. [搜索与过滤系统](#搜索与过滤系统)
+14. [响应式设计](#响应式设计)
 
 ## 项目概述
 
@@ -116,37 +120,7 @@ public Optional<Blog> findByIdAndIncrementViews(Long id) {
 - 社交分享
 - 评论区集成
 
-#### 1.3 文章搜索与过滤
 
-**前端实现**:
-- **组件**: `Articles.vue`, `Search.vue`
-- **搜索框**: 实时搜索建议
-- **过滤器**: 分类、标签、排序方式
-- **分页**: 无限滚动加载
-
-**后端实现**:
-```java
-// BlogService.java - 多条件搜索
-public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page, int size) {
-    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-    
-    switch (sort) {
-        case "liked":
-            return blogRepository.findBlogsWithFiltersOrderByLikes(keyword, category, tag, pageable);
-        case "popular":
-            return blogRepository.findBlogsWithFiltersOrderByPopularity(keyword, category, tag, pageable);
-        case "publishTime":
-        default:
-            return blogRepository.findBlogsWithFilters(keyword, category, tag, pageable);
-    }
-}
-```
-
-**搜索算法**:
-- 关键词匹配（标题、内容）
-- 分类精确匹配
-- 标签包含匹配
-- 多种排序方式（时间、热度、点赞数）
 
 ### 2. 用户管理系统
 
@@ -193,22 +167,9 @@ public ResponseEntity<?> register(@RequestBody User user) {
 - **统计图表**: ECharts展示数据
 
 **后端实现**:
-```java
-// UserService.java - 用户统计
-public Map<String, Object> getUserStatistics(Long userId) {
-    Map<String, Object> stats = new HashMap<>();
-    
-    // 获取用户发布的文章数量
-    long publishedCount = blogRepository.countByUserIdAndIsPublishedTrue(userId);
-    stats.put("publishedBlogs", publishedCount);
-    
-    // 获取总浏览量
-    long totalViews = blogRepository.sumViewCountByUserId(userId);
-    stats.put("totalViews", totalViews);
-    
-    return stats;
-}
-```
+- **服务层**: `UserStatisticsService.java`
+- **统计功能**: 发布统计、浏览量统计、点赞统计
+- **数据处理**: 按月份统计、热门文章排序
 
 ### 3. 评论系统
 
@@ -356,49 +317,11 @@ private ResponseEntity<Map<String, Object>> uploadSingleImage(MultipartFile file
 - 唯一文件名生成
 - 目录遍历防护
 
-### 6. 统计分析系统
 
-#### 6.1 系统统计
 
-**前端实现**:
-- **仪表板**: 数据可视化展示
-- **图表组件**: ECharts图表
-- **实时更新**: 定时刷新数据
+### 6. 公告系统
 
-**后端实现**:
-```java
-// SystemStatsController.java - 系统统计
-@GetMapping("/stats")
-public ResponseEntity<Map<String, Object>> getSystemStats() {
-    Map<String, Object> stats = new HashMap<>();
-    
-    try {
-        // 获取已发布博客数量
-        long totalPublishedBlogs = blogService.getPublishedBlogsCount();
-        stats.put("totalPublishedBlogs", totalPublishedBlogs);
-        
-        // 获取注册用户总数
-        long totalUsers = userService.getTotalUsersCount();
-        stats.put("totalUsers", totalUsers);
-        
-        // 获取总浏览量
-        long totalViews = blogService.getTotalViewsCount();
-        stats.put("totalViews", totalViews);
-        
-        return ResponseEntity.ok(stats);
-    } catch (Exception e) {
-        // 错误处理，返回默认值
-        stats.put("totalPublishedBlogs", 0);
-        stats.put("totalUsers", 0);
-        stats.put("totalViews", 0);
-        return ResponseEntity.ok(stats);
-    }
-}
-```
-
-### 7. 公告系统
-
-#### 7.1 公告发布与展示
+#### 6.1 公告发布与展示
 
 **前端实现**:
 - **组件**: `AnnouncementBanner.vue`, `Announcements.vue`
@@ -577,11 +500,428 @@ public class Blog {
 3. 部署JAR文件
 4. 配置反向代理（Nginx）
 
+## 管理员功能
+
+### 10.1 管理员仪表板
+
+**前端实现**:
+- **组件**: `Admin.vue`
+- **功能模块**: 博客管理、用户管理、公告管理、系统统计
+- **权限控制**: 基于用户角色的访问控制
+
+**后端实现**:
+```java
+// AdminController.java - 管理员博客管理
+@GetMapping("/blogs")
+public ResponseEntity<Map<String, Object>> getAllBlogsForAdmin(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String status) {
+    
+    Map<String, Object> response = new HashMap<>();
+    Page<Blog> blogs;
+    
+    if (keyword != null && !keyword.trim().isEmpty()) {
+        // 根据关键词和状态搜索
+        if ("published".equals(status)) {
+            blogs = blogService.searchPublishedBlogsByKeyword(keyword, page, size);
+        } else if ("draft".equals(status)) {
+            blogs = blogService.searchDraftBlogsByKeyword(keyword, page, size);
+        } else {
+            blogs = blogService.searchAllBlogsByKeyword(keyword, page, size);
+        }
+    } else {
+        // 根据状态获取博客
+        if ("published".equals(status)) {
+            blogs = blogService.getPublishedBlogs(page, size);
+        } else if ("draft".equals(status)) {
+            blogs = blogService.getDraftBlogs(page, size);
+        } else {
+            blogs = blogService.getAllBlogs(page, size);
+        }
+    }
+    
+    response.put("blogs", blogs.getContent());
+    response.put("totalPages", blogs.getTotalPages());
+    response.put("totalElements", blogs.getTotalElements());
+    response.put("currentPage", blogs.getNumber());
+    
+    return ResponseEntity.ok(response);
+}
+```
+
+### 10.2 系统统计功能
+
+**前端实现**:
+- **图表展示**: 使用ECharts展示系统数据
+- **实时更新**: 定时刷新统计数据
+- **多维度统计**: 用户数、文章数、评论数、浏览量等
+
+**后端实现**:
+```java
+// AdminController.java - 系统统计
+@GetMapping("/stats")
+public ResponseEntity<Map<String, Object>> getSystemStats() {
+    Map<String, Object> stats = new HashMap<>();
+    
+    try {
+        // 获取已发布博客数量
+        long totalPublishedBlogs = blogService.getPublishedBlogsCount();
+        stats.put("totalBlogs", totalPublishedBlogs);
+        
+        // 获取注册用户总数
+        long totalUsers = userService.getTotalUsersCount();
+        stats.put("totalUsers", totalUsers);
+        
+        // 获取总浏览量
+        long totalViews = blogService.getTotalViewsCount();
+        stats.put("totalViews", totalViews);
+        
+        // 获取总评论数
+        long totalComments = commentService.getTotalCommentsCount();
+        stats.put("totalComments", totalComments);
+        
+        // 获取公告数量
+        long totalAnnouncements = announcementService.getTotalAnnouncementsCount();
+        stats.put("totalAnnouncements", totalAnnouncements);
+        
+        return ResponseEntity.ok(stats);
+    } catch (Exception e) {
+        // 错误处理，返回默认值
+        stats.put("totalBlogs", 0);
+        stats.put("totalUsers", 0);
+        stats.put("totalViews", 0);
+        stats.put("totalComments", 0);
+        stats.put("totalAnnouncements", 0);
+        return ResponseEntity.ok(stats);
+    }
+}
+```
+
+## 用户统计系统
+
+### 11.1 个人统计功能
+
+**前端实现**:
+- **组件**: `UserDashboard.vue`
+- **统计图表**: 发布统计、浏览量统计、点赞统计
+- **数据可视化**: 时间轴展示、饼图、柱状图
+
+**后端实现**:
+```java
+// UserStatisticsService.java - 用户发布统计
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class UserStatisticsService {
+
+    private final BlogRepository blogRepository;
+    private final UserLikeRepository userLikeRepository;
+
+    /**
+     * 获取用户发布文章统计
+     */
+    public Map<String, Object> getUserPublishStatistics(String authorName) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 获取用户发布的所有文章
+        List<Blog> userBlogs = blogRepository.findByAuthorAndIsPublishedTrueOrderByCreatedAtDesc(authorName);
+        
+        // 按月份统计发布数量
+        Map<String, Long> monthlyStats = userBlogs.stream()
+            .collect(Collectors.groupingBy(
+                blog -> blog.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                Collectors.counting()
+            ));
+        
+        // 获取最受欢迎的文章（按浏览量排序）
+        List<Blog> topViewedArticles = userBlogs.stream()
+            .sorted((a, b) -> Integer.compare(
+                b.getViewCount() != null ? b.getViewCount() : 0,
+                a.getViewCount() != null ? a.getViewCount() : 0
+            ))
+            .limit(5)
+            .collect(Collectors.toList());
+        
+        result.put("monthlyStats", monthlyStats);
+        result.put("topViewedArticles", topViewedArticles);
+        result.put("totalArticles", userBlogs.size());
+        result.put("totalViews", userBlogs.stream()
+            .mapToInt(blog -> blog.getViewCount() != null ? blog.getViewCount() : 0)
+            .sum());
+        
+        return result;
+    }
+    
+    /**
+     * 获取用户点赞统计
+     */
+    public Map<String, Object> getUserLikeStatistics(String authorName) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 获取用户文章被点赞的总数
+        List<Blog> userBlogs = blogRepository.findByAuthorAndIsPublishedTrue(authorName);
+        int totalLikesReceived = userBlogs.stream()
+            .mapToInt(blog -> blog.getLikeCount() != null ? blog.getLikeCount() : 0)
+            .sum();
+        
+        // 获取用户点赞过的文章
+        Optional<User> userOpt = userRepository.findByUsername(authorName);
+        List<Blog> likedArticles = new ArrayList<>();
+        if (userOpt.isPresent()) {
+            List<UserLike> userLikes = userLikeRepository.findByUserId(userOpt.get().getId());
+            likedArticles = userLikes.stream()
+                .map(like -> blogRepository.findById(like.getBlogId()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+        }
+        
+        result.put("totalLikesReceived", totalLikesReceived);
+        result.put("likedArticles", likedArticles);
+        result.put("likedArticlesCount", likedArticles.size());
+        
+        return result;
+    }
+}
+```
+
+## 点赞系统
+
+### 12.1 点赞功能实现
+
+**前端实现**:
+- **组件**: `BlogDetail.vue`
+- **交互设计**: 点击切换点赞状态
+- **状态管理**: 实时更新点赞数量和状态
+
+**后端实现**:
+```java
+// BlogService.java - 点赞功能
+public Blog likeBlog(Long id, Long userId) {
+    Optional<Blog> blogOpt = blogRepository.findById(id);
+    if (blogOpt.isPresent()) {
+        Blog blog = blogOpt.get();
+        
+        // 检查用户是否已经点赞
+        boolean hasLiked = userLikeRepository.existsByUserIdAndBlogId(userId, id);
+        
+        if (hasLiked) {
+            // 取消点赞
+            userLikeRepository.deleteByUserIdAndBlogId(userId, id);
+            blog.setLikeCount(Math.max(0, (blog.getLikeCount() != null ? blog.getLikeCount() : 0) - 1));
+        } else {
+            // 添加点赞
+            UserLike userLike = new UserLike();
+            userLike.setUserId(userId);
+            userLike.setBlogId(id);
+            userLike.setCreatedAt(LocalDateTime.now());
+            userLikeRepository.save(userLike);
+            
+            blog.setLikeCount((blog.getLikeCount() != null ? blog.getLikeCount() : 0) + 1);
+        }
+        
+        return blogRepository.save(blog);
+    }
+    throw new RuntimeException("博客不存在");
+}
+
+public boolean hasUserLikedBlog(Long blogId, Long userId) {
+    return userLikeRepository.existsByUserIdAndBlogId(userId, blogId);
+}
+```
+
+**数据库设计**:
+```java
+// UserLike实体
+@Entity
+@Table(name = "user_likes")
+public class UserLike {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+    
+    @Column(name = "blog_id", nullable = false)
+    private Long blogId;
+    
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    // 唯一约束，防止重复点赞
+    @Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "blog_id"})
+    })
+}
+```
+
+## 搜索与过滤系统
+
+### 13.1 高级搜索功能
+
+**前端实现**:
+- **组件**: `Articles.vue`, `Search.vue`
+- **搜索建议**: 实时搜索提示
+- **多条件过滤**: 分类、标签、排序组合
+
+**后端实现**:
+```java
+// BlogService.java - 多条件搜索
+public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page, int size) {
+    Pageable pageable;
+    
+    // 根据排序方式设置分页参数
+    switch (sort) {
+        case "liked":
+            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likeCount"));
+            break;
+        case "popular":
+            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "viewCount"));
+            break;
+        case "publishTime":
+        default:
+            pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            break;
+    }
+    
+    // 构建查询条件
+    if (keyword != null && !keyword.trim().isEmpty()) {
+        if (category != null && !category.trim().isEmpty()) {
+            if (tag != null && !tag.trim().isEmpty()) {
+                // 关键词 + 分类 + 标签
+                return blogRepository.findBlogsWithAllFilters(keyword, category, tag, pageable);
+            } else {
+                // 关键词 + 分类
+                return blogRepository.findBlogsWithKeywordAndCategory(keyword, category, pageable);
+            }
+        } else if (tag != null && !tag.trim().isEmpty()) {
+            // 关键词 + 标签
+            return blogRepository.findBlogsWithKeywordAndTag(keyword, tag, pageable);
+        } else {
+            // 仅关键词
+            return blogRepository.findByTitleContainingIgnoreCaseOrContentContainingIgnoreCaseAndIsPublishedTrue(
+                keyword, keyword, pageable);
+        }
+    } else {
+        if (category != null && !category.trim().isEmpty()) {
+            if (tag != null && !tag.trim().isEmpty()) {
+                // 分类 + 标签
+                return blogRepository.findBlogsByCategoryAndTag(category, tag, pageable);
+            } else {
+                // 仅分类
+                return blogRepository.findByCategoryAndIsPublishedTrueOrderByCreatedAtDesc(category, pageable);
+            }
+        } else if (tag != null && !tag.trim().isEmpty()) {
+            // 仅标签
+            return blogRepository.findBlogsByTag(tag, pageable);
+        } else {
+            // 无过滤条件
+            return blogRepository.findByIsPublishedTrue(pageable);
+        }
+    }
+}
+```
+
+### 13.2 搜索优化
+
+**搜索算法优化**:
+- **全文搜索**: 支持标题和内容的模糊匹配
+- **权重排序**: 标题匹配权重高于内容匹配
+- **搜索历史**: 记录用户搜索历史
+- **热门搜索**: 统计搜索频率
+
+## 响应式设计
+
+### 14.1 移动端适配
+
+**CSS媒体查询**:
+```css
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .article-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .publish-layout {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    order: 2;
+    width: 100%;
+  }
+}
+
+/* 平板适配 */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .article-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+```
+
+**Vue组件响应式**:
+```javascript
+// 响应式布局组件
+export default {
+  data() {
+    return {
+      isMobile: false,
+      isTablet: false
+    }
+  },
+  mounted() {
+    this.checkScreenSize()
+    window.addEventListener('resize', this.checkScreenSize)
+  },
+  beforeUnmount() {
+    window.removeEventListener('resize', this.checkScreenSize)
+  },
+  methods: {
+    checkScreenSize() {
+      const width = window.innerWidth
+      this.isMobile = width < 768
+      this.isTablet = width >= 768 && width < 1024
+    }
+  }
+}
+```
+
+### 14.2 性能优化策略
+
+**前端优化**:
+- **懒加载**: 图片和组件按需加载
+- **虚拟滚动**: 长列表性能优化
+- **缓存策略**: 合理使用浏览器缓存
+
+**后端优化**:
+- **分页查询**: 避免大数据量查询
+- **索引优化**: 数据库查询性能优化
+- **缓存机制**: Redis缓存热点数据
+
 ## 总结
 
-本博客系统实现了完整的博客功能，包括文章管理、用户系统、评论互动、文件上传等核心模块。采用前后端分离架构，具有良好的可扩展性和维护性。系统在安全性、性能和用户体验方面都进行了优化，能够满足个人博客和小型团队博客的需求。
+本博客系统实现了完整的博客功能，包括文章管理、用户系统、评论互动、文件上传、点赞系统、搜索过滤、管理员功能、用户统计等核心模块。采用前后端分离架构，具有良好的可扩展性和维护性。系统在安全性、性能和用户体验方面都进行了优化，支持响应式设计，能够满足个人博客和小型团队博客的需求。
+
+### 技术亮点
+- **前后端分离**: Vue.js + Spring Boot架构
+- **响应式设计**: 支持多设备访问
+- **权限管理**: 基于角色的访问控制
+- **搜索功能**: 多条件组合搜索
+- **统计分析**: 数据可视化展示
+- **文件管理**: 安全的文件上传机制
+- **性能优化**: 分页、缓存、懒加载
 
 ---
 
-*文档版本：v1.0*  
-*最后更新：2025年1月15日*
+*文档版本：v2.0*  
+*最后更新：2025年6月9日*
