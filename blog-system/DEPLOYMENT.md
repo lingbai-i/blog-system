@@ -1,12 +1,24 @@
-# Blog System 后端持久化部署指南
+# 博客系统生产环境部署指南
 
-本文档提供了多种方式来实现博客系统后端的持久化运行，解决开发环境中后端服务频繁终止的问题。
+本文档专门针对生产环境部署，提供稳定、可靠的博客系统后端部署方案。如需开发环境启动指南，请参考 [STARTUP_GUIDE.md](STARTUP_GUIDE.md)。
+
+## 📋 部署前检查清单
+
+在开始部署前，请确认以下条件：
+
+- [ ] Java 21 或更高版本已安装
+- [ ] JAVA_HOME 环境变量已配置
+- [ ] MySQL 8.0+ 数据库已安装并运行
+- [ ] 数据库用户权限已正确配置
+- [ ] 防火墙端口 8080, 8081 已开放
+- [ ] 足够的磁盘空间（建议 ≥ 2GB）
+- [ ] 系统内存 ≥ 2GB
 
 ## 方案一：Windows 服务部署（推荐）
 
 ### 前置条件
 
-1. 已安装 Java 17 或更高版本
+1. 已安装 Java 21 或更高版本
 2. 已配置 JAVA_HOME 环境变量
 3. 已安装 Maven
 4. 下载 [NSSM](https://nssm.cc/download) 并将 `nssm.exe` 放在项目根目录
@@ -62,6 +74,55 @@ mvn clean package -DskipTests
 
 # 运行 JAR 文件
 java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target\blog-system-0.0.1-SNAPSHOT.jar
+```
+
+## 方案三：Docker 容器化部署（推荐用于云环境）
+
+### 使用 Docker Compose
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  blog-backend:
+    build: .
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blog_system
+    depends_on:
+      - mysql
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: your_password
+      MYSQL_DATABASE: blog_system
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+```
+
+### 部署命令
+
+```bash
+# 构建并启动服务
+docker-compose up -d
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f blog-backend
 ```
 
 
@@ -171,10 +232,55 @@ nssm stop BlogSystemBackend
 nssm remove BlogSystemBackend confirm
 ```
 
-## 推荐部署方案
+## 📋 部署后验证清单
 
-- **开发环境**：使用 `start-backend.bat` 脚本
-- **测试环境**：使用直接运行方式
-- **生产环境**：使用 Windows 服务 + 生产配置
+部署完成后，请按以下清单验证系统运行状态：
+
+### 基础功能验证
+- [ ] 后端服务正常启动（端口 8080）
+- [ ] 管理端口可访问（端口 8081）
+- [ ] 数据库连接正常
+- [ ] 日志文件正常生成
+- [ ] 文件上传目录可写入
+
+### API 接口验证
+- [ ] 健康检查：`GET http://localhost:8081/actuator/health`
+- [ ] 用户注册：`POST http://localhost:8080/api/auth/register`
+- [ ] 用户登录：`POST http://localhost:8080/api/auth/login`
+- [ ] 文章列表：`GET http://localhost:8080/api/articles`
+
+### 性能和监控验证
+- [ ] 内存使用率 < 80%
+- [ ] CPU 使用率 < 70%
+- [ ] 响应时间 < 2 秒
+- [ ] 日志轮转正常工作
+
+## 🚀 推荐部署方案
+
+| 环境类型 | 推荐方案 | 特点 |
+|----------|----------|------|
+| **小型生产环境** | Windows 服务部署 | 简单可靠，易于维护 |
+| **云环境/容器化** | Docker 部署 | 可扩展，环境一致性 |
+| **高可用环境** | 负载均衡 + 多实例 | 高可用，性能优异 |
+
+## 🔧 运维建议
+
+### 定期维护任务
+- **每日**：检查服务状态、查看错误日志
+- **每周**：清理过期日志、检查磁盘空间
+- **每月**：数据库备份、性能分析
+- **每季度**：安全更新、配置优化
+
+### 监控告警
+建议配置以下监控指标：
+- 服务可用性（99.9% SLA）
+- 响应时间（< 2 秒）
+- 内存使用率（< 80%）
+- 磁盘空间（> 20% 剩余）
+- 数据库连接数（< 最大连接数的 80%）
+
+---
 
 选择适合您环境的部署方案，确保博客系统后端稳定持久运行！
+
+> 💡 **提示**：生产环境部署建议先在测试环境验证，确保配置正确后再部署到生产环境。

@@ -22,6 +22,12 @@
       <div class="admin-container">
         <!-- 统计卡片 -->
         <section class="stats-section">
+          <div class="stats-header">
+            <h2>数据统计</h2>
+            <el-button @click="() => fetchStats(true)" :icon="Refresh" size="small" type="primary" plain :loading="statsLoading">
+              刷新数据
+            </el-button>
+          </div>
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon total">
@@ -754,9 +760,17 @@ const deleteBlog = async (id) => {
   }
 }
 
+// 统计数据加载状态
+const statsLoading = ref(false)
+
 // 获取统计数据
-const fetchStats = async () => {
+const fetchStats = async (showMessage = false) => {
   try {
+    statsLoading.value = true
+    if (showMessage) {
+      ElMessage.info('正在刷新统计数据...')
+    }
+    
     const response = await axios.get('/api/admin/stats')
     if (response.data.success) {
       const data = response.data.data
@@ -768,11 +782,20 @@ const fetchStats = async () => {
         publishedAnnouncements: data.publishedAnnouncements || 0,
         pinnedAnnouncements: data.pinnedAnnouncements || 0
       }
+      
+      if (showMessage) {
+        ElMessage.success('统计数据已更新')
+      }
     }
   } catch (error) {
     console.error('获取统计数据失败:', error)
+    if (showMessage) {
+      ElMessage.error('获取统计数据失败')
+    }
     // 如果API失败，使用计算方式
     await calculateStatsFromBlogs()
+  } finally {
+    statsLoading.value = false
   }
 }
 
@@ -1151,6 +1174,9 @@ const formatDateTime = (dateTime) => {
 
 
 
+// 定时器引用
+const statsTimer = ref(null)
+
 // 页面加载时获取数据
 // 监听路由变化，切换标签页
 onMounted(() => {
@@ -1165,6 +1191,11 @@ onMounted(() => {
   fetchBlogs()
   fetchAnnouncements()
   
+  // 设置定时器，每30秒自动刷新统计数据
+  statsTimer.value = setInterval(() => {
+    fetchStats()
+  }, 30000) // 30秒
+  
   // 根据路由元信息设置当前标签页
   const { tab } = router.currentRoute.value.meta
   if (tab) {
@@ -1175,6 +1206,11 @@ onMounted(() => {
 // 组件卸载前清理
 onBeforeUnmount(() => {
   isUnmounting.value = true
+  // 清理定时器
+  if (statsTimer.value) {
+    clearInterval(statsTimer.value)
+    statsTimer.value = null
+  }
 })
 
 // 监听标签页变化，更新路由
@@ -1314,6 +1350,21 @@ const handleLogout = async () => {
 
 .stats-section {
   margin-bottom: 1.5rem;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+}
+
+.stats-header h2 {
+  margin: 0;
+  color: #303133;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .stats-grid {

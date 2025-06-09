@@ -7,13 +7,20 @@
           <h1 @click="goHome">📝 个人博客系统</h1>
         </div>
 
+        <nav class="nav">
+          <router-link to="/" class="nav-link">首页</router-link>
+          <router-link to="/articles" class="nav-link active">文章</router-link>
+          <router-link to="/announcements" class="nav-link">公告</router-link>
+          <router-link to="/publish" class="nav-link" v-if="isLoggedIn">发布文章</router-link>
+        </nav>
+
         <div class="user-section">
           <template v-if="isLoggedIn">
-<<<<<<< HEAD
             <el-dropdown trigger="hover" placement="bottom-end">
               <div class="user-info">
                 <el-avatar 
                   :size="32" 
+                  :src="userAvatar"
                   :icon="UserFilled"
                   class="user-avatar"
                 />
@@ -40,11 +47,6 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-=======
-            <div class="user-info">
-              <span class="username">欢迎，{{ username || '用户' }}</span>
-            </div>
->>>>>>> afff5b40aa8bb315874e990f21b6e306ce2d5c92
           </template>
           <template v-else>
             <div class="auth-buttons">
@@ -53,16 +55,6 @@
             </div>
           </template>
         </div>
-        <nav class="nav">
-          <el-button @click="goHome" type="primary" size="small" class="home-btn">
-            <el-icon><House /></el-icon>
-            返回首页
-          </el-button>
-          <router-link to="/" class="nav-link">首页</router-link>
-          <router-link to="/articles" class="nav-link active">文章</router-link>
-          <router-link to="/announcements" class="nav-link">公告</router-link>
-          <router-link to="/publish" class="nav-link" v-if="isLoggedIn">发布文章</router-link>
-        </nav>
       </div>
     </header>
 
@@ -376,6 +368,12 @@ const searchKeyword = ref("");
 const categoryFilter = ref("");
 const tagFilter = ref("");
 
+// 用户相关数据
+const isLoggedIn = ref(false);
+const username = ref('');
+const userRole = ref('');
+const userAvatar = ref('');
+
 // 搜索建议
 const searchSuggestions = ref([
   "Vue.js",
@@ -395,17 +393,9 @@ const hasSearchCriteria = computed(() => {
   return searchKeyword.value.trim() !== "" || categoryFilter.value !== "" || tagFilter.value !== "";
 });
 
-// 检查用户登录状态
-const isLoggedIn = computed(() => {
-  const userToken = localStorage.getItem('userToken');
-  const adminToken = localStorage.getItem('adminToken');
-  return userToken !== null || adminToken !== null;
-});
-
-// 获取用户名
-const username = computed(() => {
-  const storedUsername = localStorage.getItem('username');
-  return storedUsername || '用户';
+// 获取用户名的计算属性（备用）
+const displayUsername = computed(() => {
+  return username.value || localStorage.getItem('username') || '用户';
 });
 
 // 处理注销
@@ -427,7 +417,7 @@ const goToRegister = () => {
 };
 
 const goToUserCenter = () => {
-  router.push('/user-dashboard');
+  router.push('/dashboard');
 };
 
 const goToPublish = () => {
@@ -438,10 +428,53 @@ const goHome = () => {
   router.push('/');
 };
 
+// 初始化用户信息
+const initUserInfo = () => {
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+  if (token) {
+    isLoggedIn.value = true;
+    username.value = localStorage.getItem('username') || '';
+    userRole.value = localStorage.getItem('userRole') || '';
+    fetchUserAvatar();
+  }
+};
 
+// 获取用户头像
+const fetchUserAvatar = async () => {
+  try {
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken');
+    if (!token) {
+      console.log('没有找到用户token');
+      return;
+    }
+    
+    console.log('正在获取用户头像，token:', token);
+    const response = await axios.get('http://localhost:8080/api/auth/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    console.log('API响应:', response.data);
+    if (response.data && response.data.avatar_url) {
+      // 如果是相对路径，添加后端服务器地址前缀
+      const avatarUrl = response.data.avatar_url.startsWith('http') 
+        ? response.data.avatar_url 
+        : `http://localhost:8080${response.data.avatar_url}`;
+      userAvatar.value = avatarUrl;
+      console.log('设置用户头像:', avatarUrl);
+    } else {
+      console.log('API响应中没有头像信息');
+    }
+  } catch (error) {
+    console.error('获取用户头像失败:', error);
+  }
+};
 
 // 组件挂载时初始化
 onMounted(() => {
+  // 初始化用户信息
+  initUserInfo();
+  
   // 从路由参数获取搜索条件
   if (route.query.keyword) {
     searchKeyword.value = route.query.keyword;
@@ -668,28 +701,7 @@ const goToArticleDetail = (id) => {
   router.push(`/blog/${id}`);
 };
 
-<<<<<<< HEAD
-// 跳转到首页
-const goHome = () => {
-  router.push('/')
-}
-
-const goToLogin = () => {
-  router.push('/login')
-}
-
-const goToRegister = () => {
-  router.push('/register')
-}
-
-const goToUserCenter = () => {
-  router.push('/user-center')
-}
-
-const goToPublish = () => {
-  router.push('/publish')
-}
-
+// 切换账号功能
 const handleSwitchAccount = () => {
   // 清除登录状态
   localStorage.removeItem('token')
@@ -701,17 +713,6 @@ const handleSwitchAccount = () => {
   ElMessage.success('切换账号成功')
   router.push('/login')
 }
-
-const handleLogout = () => {
-  // 清除登录状态
-  localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
-  ElMessage.success('退出成功')
-  router.push('/')
-}
-
-=======
->>>>>>> afff5b40aa8bb315874e990f21b6e306ce2d5c92
 
 
 // 格式化日期
@@ -802,6 +803,7 @@ const getTagsArray = (tags) => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
+  gap: 1rem;
 }
 
 .logo {
@@ -889,6 +891,9 @@ const getTagsArray = (tags) => {
   display: flex;
   gap: 20px;
   align-items: center;
+  flex: 1;
+  justify-content: flex-end;
+  margin-right: 2rem;
 }
 
 .home-btn {
@@ -1006,7 +1011,7 @@ const getTagsArray = (tags) => {
 
 .article-content {
   display: flex;
-  gap: 2rem;
+  gap: 1rem;
   align-items: flex-start;
   flex: 1;
   overflow: hidden;
@@ -1208,7 +1213,7 @@ const getTagsArray = (tags) => {
 .filter-options {
   display: grid;
   grid-template-columns: 1fr 1fr auto;
-  gap: 2rem;
+  gap: 1rem;
   align-items: end;
 }
 

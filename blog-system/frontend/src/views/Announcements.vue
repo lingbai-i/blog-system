@@ -7,13 +7,20 @@
           <h1 @click="goHome">📝 个人博客系统</h1>
         </div>
 
+        <nav class="nav">
+          <router-link to="/" class="nav-link">首页</router-link>
+          <router-link to="/articles" class="nav-link">文章</router-link>
+          <router-link to="/announcements" class="nav-link active">公告</router-link>
+          <router-link to="/publish" class="nav-link" v-if="isLoggedIn">发布文章</router-link>
+        </nav>
+
         <div class="user-section">
           <template v-if="isLoggedIn">
-<<<<<<< HEAD
             <el-dropdown trigger="hover" placement="bottom-end">
               <div class="user-info">
                 <el-avatar 
                   :size="32" 
+                  :src="userAvatar"
                   :icon="UserFilled"
                   class="user-avatar"
                 />
@@ -40,11 +47,6 @@
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-=======
-            <div class="user-info">
-              <span class="username">欢迎，{{ username || '用户' }}</span>
-            </div>
->>>>>>> afff5b40aa8bb315874e990f21b6e306ce2d5c92
           </template>
           <template v-else>
             <div class="auth-buttons">
@@ -53,16 +55,6 @@
             </div>
           </template>
         </div>
-        <nav class="nav">
-           <el-button @click="goHome" type="primary" size="small" class="home-btn">
-             <el-icon><House /></el-icon>
-             返回首页
-           </el-button>
-           <router-link to="/" class="nav-link">首页</router-link>
-           <router-link to="/articles" class="nav-link">文章</router-link>
-           <router-link to="/announcements" class="nav-link active">公告</router-link>
-           <router-link to="/publish" class="nav-link" v-if="isLoggedIn">发布文章</router-link>
-         </nav>
       </div>
     </header>
 
@@ -128,6 +120,12 @@ const router = useRouter()
 const announcements = ref([])
 const loading = ref(true)
 
+// 用户相关数据
+const isLoggedIn = ref(false)
+const username = ref('')
+const userRole = ref('')
+const userAvatar = ref('')
+
 // 获取公告列表
 const fetchAnnouncements = async () => {
   try {
@@ -177,15 +175,49 @@ const getPreview = (content) => {
   return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText
 }
 
-// 检查用户登录状态
-const isLoggedIn = computed(() => {
-  return localStorage.getItem('userToken') !== null || localStorage.getItem('adminToken') !== null
-})
+// 用户登录状态检查（使用ref版本的isLoggedIn）
 
-// 获取用户名
-const username = computed(() => {
-  return localStorage.getItem('username') || '用户'
-})
+// 初始化用户信息
+const initUserInfo = () => {
+  const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+  if (token) {
+    isLoggedIn.value = true
+    username.value = localStorage.getItem('username') || ''
+    userRole.value = localStorage.getItem('userRole') || ''
+    fetchUserAvatar()
+  }
+}
+
+// 获取用户头像
+const fetchUserAvatar = async () => {
+  try {
+    const token = localStorage.getItem('userToken') || localStorage.getItem('adminToken')
+    if (!token) {
+      console.log('没有找到用户token')
+      return
+    }
+    
+    console.log('正在获取用户头像，token:', token)
+    const response = await axios.get('http://localhost:8080/api/auth/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    console.log('API响应:', response.data)
+    if (response.data && response.data.avatar_url) {
+      // 如果是相对路径，添加后端服务器地址前缀
+      const avatarUrl = response.data.avatar_url.startsWith('http') 
+        ? response.data.avatar_url 
+        : `http://localhost:8080${response.data.avatar_url}`
+      userAvatar.value = avatarUrl
+      console.log('设置用户头像:', avatarUrl)
+    } else {
+      console.log('API响应中没有头像信息')
+    }
+  } catch (error) {
+    console.error('获取用户头像失败:', error)
+  }
+}
 
 // 导航方法
 const goHome = () => {
@@ -201,7 +233,7 @@ const goToRegister = () => {
 }
 
 const goToUserCenter = () => {
-  router.push('/user-center')
+  router.push('/dashboard')
 }
 
 const goToPublish = () => {
@@ -229,6 +261,7 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
+  initUserInfo()
   fetchAnnouncements()
 })
 </script>
@@ -241,28 +274,36 @@ onMounted(() => {
 /* 头部导航样式 */
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 70px;
+  padding: 0 1rem;
+  gap: 1rem;
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin: 0;
 }
 
 .logo h1 {
-  margin: 0;
-  font-size: 1.5rem;
+  color: white;
+  font-size: 1.8rem;
   font-weight: 600;
   cursor: pointer;
+  margin: 0;
   transition: opacity 0.3s ease;
 }
 
@@ -274,6 +315,9 @@ onMounted(() => {
   display: flex;
   gap: 20px;
   align-items: center;
+  flex: 1;
+  justify-content: flex-end;
+  margin-right: 2rem;
 }
 
 .home-btn {
@@ -294,27 +338,24 @@ onMounted(() => {
 .nav-link {
   color: white;
   text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  transition: background-color 0.3s;
   font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
-  transition: all 0.3s ease;
-  position: relative;
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .nav-link.active {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.2);
   font-weight: 600;
 }
 
 .user-section {
   display: flex;
   align-items: center;
-  gap: 15px;
 }
 
 .user-info {
@@ -322,32 +363,54 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 20px;
-  transition: background 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
 }
 
 .user-info:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .user-avatar {
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+}
+
+.user-info:hover .user-avatar {
+  transform: scale(1.15);
 }
 
 .username {
+  color: white;
   font-weight: 500;
-  font-size: 14px;
 }
 
 .auth-buttons {
   display: flex;
-  gap: 10px;
+  gap: 0.5rem;
 }
 
 .auth-buttons .el-button {
-  border-radius: 20px;
-  font-weight: 500;
+  border-color: rgba(255, 255, 255, 0.8);
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.auth-buttons .el-button:hover {
+  border-color: white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-buttons .el-button--primary:not(.is-plain) {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-buttons .el-button--primary:not(.is-plain):hover {
+  background-color: rgba(255, 255, 255, 0.35);
+  border-color: white;
 }
 
 .announcements-page .page-header {

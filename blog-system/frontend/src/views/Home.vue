@@ -18,14 +18,14 @@
               @keyup.enter="performSearch"
               clearable
             />
-            <el-button 
+            <NavigationButton 
               type="primary" 
               class="search-button"
               @click="performSearch"
               :icon="Search"
             >
               搜索
-            </el-button>
+            </NavigationButton>
           </div>
         </div>
         <div class="user-section">
@@ -64,8 +64,8 @@
           </template>
           <template v-else>
             <div class="auth-buttons">
-              <el-button @click="goToLogin" size="small">登录</el-button>
-              <el-button type="primary" @click="goToRegister" size="small">注册</el-button>
+              <NavigationButton @click="goToLogin" size="small">登录</NavigationButton>
+              <NavigationButton type="primary" @click="goToRegister" size="small">注册</NavigationButton>
             </div>
           </template>
         </div>
@@ -357,7 +357,7 @@
                 </div>
                 <div class="info-item">
                   <span class="info-label">更新时间</span>
-                  <span class="info-value">2025年6月8日</span>
+                  <span class="info-value">2025年6月9日</span>
                 </div>
               </div>
             </div>
@@ -546,6 +546,7 @@ import { useRouter } from 'vue-router'
 import { Search, User, Calendar, View, Folder, TrendCharts, Star, Delete, ChatDotRound, UserFilled, Setting, SwitchButton, House, Document, Bell, RefreshRight } from '@element-plus/icons-vue'
 import axios from 'axios'
 import AnnouncementBanner from '../components/AnnouncementBanner.vue'
+import NavigationButton from '../components/NavigationButton.vue'
 
 const router = useRouter()
 

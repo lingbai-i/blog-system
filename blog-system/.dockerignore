@@ -1,0 +1,62 @@
+# Maven
+target/
+!target/*.jar
+!target/**/lib/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+uploads/
+temp/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+README*
+DOCS/
+
+# Scripts
+*.bat
+*.sh
+
+# Configuration (keep only necessary ones)
+!src/main/resources/application*.yml
+!src/main/resources/application*.properties
+
+# Test files
+src/test/
+
+# Frontend (if separate)
+frontend/
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Environment files
+.env
+.env.local
+.env.*.local
