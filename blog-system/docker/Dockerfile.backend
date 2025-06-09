@@ -1,0 +1,47 @@
+# 使用多阶段构建减小最终镜像大小
+FROM maven:3.8-openjdk-17 AS builder
+
+# 设置工作目录
+WORKDIR /build
+
+# 复制 pom.xml 并下载依赖项
+COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# 复制源代码
+COPY src/ ./src/
+
+# 构建应用
+RUN mvn clean package -DskipTests
+
+# 运行阶段使用更小的基础镜像
+FROM eclipse-temurin:17-jre-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 创建必要的目录
+RUN mkdir -p /app/logs /app/uploads /app/config
+
+# 从构建阶段复制 JAR 文件
+COPY --from=builder /build/target/*.jar app.jar
+
+# 复制配置文件
+COPY src/main/resources/application.properties /app/config/
+COPY src/main/resources/application-*.properties /app/config/
+
+# 设置时区
+RUN apk add --no-cache tzdata && \
+  cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+  echo "Asia/Shanghai" > /etc/timezone && \
+  apk del tzdata
+
+# 设置健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+
+# 暴露端口
+EXPOSE 8080
+
+# 启动命令
+ENTRYPOINT ["java", "-jar", "-Dspring.config.location=file:/app/config/", "-Dspring.profiles.active=docker", "app.jar"]

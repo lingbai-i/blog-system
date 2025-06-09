@@ -3,29 +3,30 @@ version: '3.8'
 services:
   # 博客系统后端服务
   blog-backend:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
     container_name: blog-system-backend
     ports:
       - "8080:8080"  # 主服务端口
-      - "8081:8081"  # 管理端口
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/blog_system?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=blog_user
-      - SPRING_DATASOURCE_PASSWORD=blog_password
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
       - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
-      - ./uploads:/app/uploads
-      - ./logs:/app/logs
-      - ./config:/app/config
+      - ../uploads:/app/uploads
+      - ../logs:/app/logs
+      - ../config:/app/config
     networks:
       - blog-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,25 +37,48 @@ services:
     image: mysql:8.0
     container_name: blog-system-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: blog_system
-      MYSQL_USER: blog_user
-      MYSQL_PASSWORD: blog_password
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./sql:/docker-entrypoint-initdb.d
+      - ../src/main/resources/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ../src/main/resources/data.sql:/docker-entrypoint-initdb.d/2-data.sql
+    networks:
+      - blog-network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 博客系统前端服务
+  blog-frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: blog-system-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080
+      - NODE_ENV=production
+    depends_on:
+      - blog-backend
     networks:
       - blog-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
       start_period: 30s
 
   # Redis 缓存服务（可选）
@@ -82,8 +106,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - blog-backend
     networks:

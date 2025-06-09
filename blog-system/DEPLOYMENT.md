@@ -1,6 +1,88 @@
-# 博客系统生产环境部署指南
+# 博客系统部署指南
 
-本文档专门针对生产环境部署，提供稳定、可靠的博客系统后端部署方案。如需开发环境启动指南，请参考 [STARTUP_GUIDE.md](STARTUP_GUIDE.md)。
+本文档详细介绍了博客系统的多种部署方式，包括本地开发环境、Docker容器化部署等。
+
+## 目录
+
+- [系统要求](#系统要求)
+- [本地开发部署](#本地开发部署)
+- [Docker容器化部署](#docker容器化部署)
+- [生产环境部署](#生产环境部署)
+- [常见问题](#常见问题)
+
+## 系统要求
+
+### 基础要求
+- **操作系统**: Windows 10/11, macOS, Linux
+- **Java**: JDK 17 或更高版本
+- **Node.js**: 16.x 或更高版本
+- **MySQL**: 8.0 或更高版本
+- **Maven**: 3.6 或更高版本
+
+### Docker部署要求
+- **Docker**: 20.10 或更高版本
+- **Docker Compose**: 2.0 或更高版本
+
+## 本地开发部署
+
+### 方式一：使用启动脚本（推荐）
+
+1. **快速启动**
+   ```bash
+   # Windows
+   启动点我.bat
+   
+   # 选择选项 1: Full Start (Database + Backend + Frontend)
+   ```
+
+2. **脚本功能**
+   - 自动检查和启动MySQL服务
+   - 构建后端项目
+   - 启动后端服务
+   - 安装前端依赖并启动前端服务
+   - 提供数据库管理功能
+
+### 方式二：手动启动
+
+1. **数据库准备**
+   ```bash
+   # 启动MySQL服务
+   net start mysql
+   
+   # 创建数据库
+   mysql -u root -p
+   CREATE DATABASE blog_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+2. **启动后端**
+   ```bash
+   # 构建项目
+   mvn clean package -DskipTests
+   
+   # 启动后端
+   java -jar target/blog-system-0.0.1-SNAPSHOT.jar
+   ```
+
+3. **启动前端**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+### 数据库初始化
+
+使用提供的初始化脚本：
+```bash
+# Windows
+scripts\init-database.bat
+```
+
+或手动执行SQL文件：
+```bash
+mysql -u root -p123456 blog_system < src/main/resources/schema.sql
+mysql -u root -p123456 blog_system < src/main/resources/data.sql
+```
 
 ## 📋 部署前检查清单
 
@@ -112,17 +194,45 @@ volumes:
   mysql_data:
 ```
 
-### 部署命令
+### 使用脚本部署
 
+1. 进入Docker目录并运行启动脚本：
 ```bash
-# 构建并启动服务
+# Windows
+cd docker
+docker-start.bat
+
+# Linux/Mac
+cd docker
+chmod +x docker-start.sh
+./docker-start.sh
+```
+
+### 使用Docker Compose
+
+1. 进入Docker目录：
+```bash
+cd docker
+```
+
+2. 构建并启动所有服务：
+```bash
 docker-compose up -d
+```
 
-# 查看服务状态
+3. 查看服务状态：
+```bash
 docker-compose ps
+```
 
-# 查看日志
-docker-compose logs -f blog-backend
+4. 查看日志：
+```bash
+docker-compose logs -f
+```
+
+5. 停止服务：
+```bash
+docker-compose down
 ```
 
 
