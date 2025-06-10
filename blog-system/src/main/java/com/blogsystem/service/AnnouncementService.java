@@ -26,7 +26,7 @@ public class AnnouncementService {
 
     // 获取所有已发布的公告（用户用）
     public List<Announcement> getPublishedAnnouncements() {
-        return announcementRepository.findByIsPublishedTrueOrderByPublishedAtDesc();
+        return announcementRepository.findPublishedAnnouncementsOrderByPinnedAndPublishedAt();
     }
 
     // 获取置顶公告

@@ -583,7 +583,12 @@ onMounted(() => {
         content: blog.content || '',
         summary: blog.summary || '',
         category: blog.category || '',
-        tags: blog.tags ? (typeof blog.tags === 'string' ? blog.tags.split(',').filter(tag => tag.trim()) : blog.tags) : [],
+        tags: blog.tags ? (typeof blog.tags === 'string' ? 
+          (blog.tags.startsWith('[') && blog.tags.endsWith(']') ? 
+            JSON.parse(blog.tags) : 
+            blog.tags.split(',').filter(tag => tag.trim())
+          ) : blog.tags
+        ) : [],
         images: blog.images ? (typeof blog.images === 'string' ? JSON.parse(blog.images) : blog.images) : []
       }
       

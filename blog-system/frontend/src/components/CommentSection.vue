@@ -338,6 +338,10 @@
                   @click="toggleRepliesCollapse(comment.id)"
                   class="toggle-btn"
                 >
+                  <el-icon class="toggle-icon">
+                    <ArrowDown v-if="collapsedReplies.has(comment.id)" />
+                    <ArrowUp v-else />
+                  </el-icon>
                   {{ getToggleButtonText(comment.replies, comment.id) }}
                 </el-button>
               </div>
@@ -357,7 +361,9 @@ import {
   UserFilled,
   ChatLineRound,
   Delete,
-  Plus
+  Plus,
+  ArrowDown,
+  ArrowUp
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
@@ -493,6 +499,12 @@ const fetchRepliesForComments = async () => {
       const response = await axios.get(`/api/comments/${comment.id}/replies`)
       if (response.data) {
         comment.replies = response.data
+        
+        // 如果有回复，默认设置为折叠状态
+        if (comment.replies.length > 0) {
+          collapsedReplies.value.add(comment.id)
+        }
+        
         // 处理回复作者头像路径和图片数据
         comment.replies.forEach(reply => {
           if (reply.authorAvatar && !reply.authorAvatar.startsWith('http')) {
@@ -969,27 +981,29 @@ const toggleRepliesCollapse = (commentId) => {
 const getVisibleReplies = (replies, commentId) => {
   if (!replies || replies.length === 0) return []
   
+  // 检查折叠状态
   const isCollapsed = collapsedReplies.value.has(commentId)
-  if (isCollapsed || replies.length <= 3) {
+  if (isCollapsed) {
+    // 折叠状态：不显示任何回复
+    return []
+  } else {
+    // 展开状态：显示全部
     return replies
   }
-  
-  return replies.slice(0, 3)
 }
 
 // 检查是否需要显示展开/折叠按钮
 const shouldShowToggleButton = (replies) => {
-  return replies && replies.length > 3
+  return replies && replies.length > 0
 }
 
 // 获取折叠按钮文本
 const getToggleButtonText = (replies, commentId) => {
-  if (!replies || replies.length <= 3) return ''
+  if (!replies || replies.length === 0) return ''
   
   const isCollapsed = collapsedReplies.value.has(commentId)
-  const hiddenCount = replies.length - 3
   
-  return isCollapsed ? `展开全部 ${replies.length} 条回复` : `收起 ${hiddenCount} 条回复`
+  return isCollapsed ? `展开全部 ${replies.length} 条回复` : `收起回复`
 }
 
 // 图片上传相关方法
@@ -1316,7 +1330,7 @@ onMounted(() => {
 }
 
 .toggle-replies-btn {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   text-align: center;
   padding: 0.5rem 0;
 }
@@ -1325,11 +1339,36 @@ onMounted(() => {
   font-size: 0.875rem;
   color: #1890ff;
   transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f4ff 100%);
+  border: 1px solid #d4edda;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
 }
 
 .toggle-btn:hover {
-  background-color: #f0f8ff;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #e6f4ff 0%, #bae0ff 100%);
+  border-color: #91caff;
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.toggle-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.1);
+}
+
+.toggle-icon {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.toggle-btn:hover .toggle-icon {
+  transform: scale(1.1);
 }
 
 /* 图片上传样式 */

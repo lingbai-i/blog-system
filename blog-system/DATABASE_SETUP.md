@@ -92,61 +92,37 @@ mysql -u root -p blog < src/main/resources/data.sql
 | 账户类型 | 用户名    | 密码       | 邮箱               | 说明       | 头像支持 |
 | -------- | --------- | ---------- | ------------------ | ---------- | -------- |
 | 管理员   | admin     | admin123   | admin@blog.com     | 系统管理员 | ✅       |
-| 普通用户 | blogger   | blogger123 | blogger@blog.com   | 博客作者   | ✅       |
-| 普通用户 | reader    | reader123  | reader@blog.com    | 博客读者   | ✅       |
-| 普通用户 | developer | dev123     | developer@blog.com | 开发者     | ✅       |
-| 普通用户 | student   | student123 | student@blog.com   | 技术学生   | ✅       |
+| 普通用户 | frontend  | frontend123 | frontend@blog.com | 前端工程师 | ✅       |
+| 普通用户 | backend   | backend123  | backend@blog.com  | 后端工程师 | ✅       |
+| 普通用户 | database  | database123 | database@blog.com | 数据库专家 | ✅       |
+| 普通用户 | devops    | devops123   | devops@blog.com   | 运维工程师 | ✅       |
 
 **注意**: 所有用户都支持头像上传功能，头像文件存储在 `uploads/avatars/` 目录下。
 
 ## 数据库表结构
 
+数据库包含以下核心表和扩展表，详细的表结构定义请参考 `src/main/resources/schema.sql` 文件：
+
 ### 核心表
-
-1. **users** - 用户表
-
-   - 存储用户基本信息
-   - 支持管理员和普通用户
-   - 包含头像、简介等扩展字段
-   - 新增 `avatar` 字段支持头像文件路径存储
-   - 支持头像上传和显示功能
-
-2. **blogs** - 博客文章表
-
-   - 存储文章内容和元数据
-   - 支持分类、标签、SEO 优化
-   - 包含浏览量、点赞数等统计信息
-
-3. **comments** - 评论表
-   - 支持嵌套回复
-   - 支持匿名和注册用户评论
-   - 包含审核机制
+- **users**: 用户信息表，存储用户基本信息和认证数据
+- **articles**: 文章表，存储博客文章的内容和元数据
+- **comments**: 评论表，存储文章评论信息
+- **categories**: 分类表，存储文章分类信息
+- **tags**: 标签表，存储文章标签信息
 
 ### 扩展表
+- **article_tags**: 文章标签关联表，多对多关系
+- **likes**: 点赞表，存储用户点赞记录
+- **system_configs**: 系统配置表，存储系统配置参数
+- **access_logs**: 访问日志表，记录用户访问日志
 
-4. **tags** - 标签表
-
-   - 独立的标签管理
-   - 支持标签颜色和使用统计
-
-5. **categories** - 分类表
-
-   - 支持层级分类
-   - 包含分类统计信息
-
-6. **system_configs** - 系统配置表
-
-   - 动态系统配置
-   - 支持不同数据类型
-
-7. **user_likes** - 用户点赞表
-   - 记录用户对博客文章的点赞行为
-   - 防止重复点赞
-   - 支持点赞统计和分析
-
-8. **access_logs** - 访问日志表
-   - 用户访问记录
-   - 支持统计分析
+### 表关系说明
+- 用户与文章：一对多关系（一个用户可以发布多篇文章）
+- 文章与分类：多对一关系（多篇文章属于一个分类）
+- 文章与标签：多对多关系（通过article_tags表关联）
+- 文章与评论：一对多关系（一篇文章可以有多个评论）
+- 用户与评论：一对多关系（一个用户可以发表多个评论）
+- 用户与点赞：一对多关系（一个用户可以点赞多个目标）
 
 ## 注意事项
 
@@ -215,3 +191,5 @@ CREATE DATABASE blog CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    - 修改默认密码
    - 限制数据库访问权限
    - 启用 SSL 连接
+   
+   本项目由@mycc-lingbai-i Teams制作

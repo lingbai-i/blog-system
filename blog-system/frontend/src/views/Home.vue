@@ -230,7 +230,7 @@
               >
                 <div class="blog-card-content">
                   <h3 class="blog-title">{{ blog.title }}</h3>
-                  <p class="blog-summary">{{ blog.summary || blog.content.substring(0, 120) + '...' }}</p>
+                  <p class="blog-summary">{{ getPlainTextSummary(blog) }}</p>
                   <div class="blog-meta">
                     <span class="blog-author">
                       <el-avatar 
@@ -906,6 +906,24 @@ const checkLoginStatus = async () => {
           localStorage.removeItem('userRole')
         }
       }
+    } else if (token.startsWith('mock-')) {
+      // 模拟token格式: mock-admin-token-timestamp 或 mock-user-token-timestamp
+      const parts = token.split('-')
+      if (parts.length >= 4) {
+        const timestamp = parseInt(parts[parts.length - 1])
+        const currentTime = Date.now()
+        // 检查token是否过期（假设token有效期为24小时）
+        const tokenExpiry = 24 * 60 * 60 * 1000 // 24小时
+        if (currentTime - timestamp <= tokenExpiry) {
+          isValidToken = true
+        } else {
+          // token已过期，清理localStorage
+          localStorage.removeItem('userToken')
+          localStorage.removeItem('adminToken')
+          localStorage.removeItem('username')
+          localStorage.removeItem('userRole')
+        }
+      }
     } else {
       // 对于其他格式的token，暂时认为有效
       isValidToken = true
@@ -960,6 +978,23 @@ const formatDate = (date) => {
   if (!date) return ''
   const d = new Date(date)
   return d.toLocaleDateString('zh-CN')
+}
+
+// 获取纯文本摘要
+const getPlainTextSummary = (blog) => {
+  if (blog.summary) {
+    return blog.summary
+  }
+  
+  if (blog.content) {
+    // 创建临时DOM元素来解析HTML
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = blog.content
+    const plainText = tempDiv.textContent || tempDiv.innerText || ''
+    return plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '')
+  }
+  
+  return '暂无摘要'
 }
 
 // 获取文章的第一张图片

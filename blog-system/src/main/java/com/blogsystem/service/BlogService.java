@@ -51,6 +51,12 @@ public class BlogService {
 
     // 创建博客
     public Blog createBlog(Blog blog) {
+        // 处理发布时间
+        if (blog.getIsPublished() != null && blog.getIsPublished()) {
+            // 如果是发布状态，设置发布时间为当前时间
+            blog.setPublishedAt(LocalDateTime.now());
+        }
+        
         // 处理分类
         if (blog.getCategory() != null && !blog.getCategory().trim().isEmpty()) {
             Optional<Category> categoryOpt = categoryService.findByName(blog.getCategory());
@@ -70,6 +76,27 @@ public class BlogService {
 
     // 更新博客
     public Blog updateBlog(Blog blog) {
+        // 获取原有博客数据
+        Optional<Blog> existingBlogOpt = blogRepository.findById(blog.getId());
+        if (existingBlogOpt.isPresent()) {
+            Blog existingBlog = existingBlogOpt.get();
+            
+            // 处理发布时间逻辑
+            if (blog.getIsPublished() != null && blog.getIsPublished()) {
+                // 如果当前要发布文章
+                if (existingBlog.getPublishedAt() == null) {
+                    // 如果原来没有发布时间，设置为当前时间（首次发布）
+                    blog.setPublishedAt(LocalDateTime.now());
+                } else {
+                    // 如果原来有发布时间，保持原有发布时间（再次编辑已发布文章）
+                    blog.setPublishedAt(existingBlog.getPublishedAt());
+                }
+            } else {
+                // 如果是草稿，保持原有发布时间（可能为null）
+                blog.setPublishedAt(existingBlog.getPublishedAt());
+            }
+        }
+        
         // 处理分类
         if (blog.getCategory() != null && !blog.getCategory().trim().isEmpty()) {
             Optional<Category> categoryOpt = categoryService.findByName(blog.getCategory());
@@ -143,8 +170,8 @@ public class BlogService {
     // 多条件组合搜索博客
     public Page<Blog> searchBlogsWithFilters(String keyword, String category, String tag, String sort, int page,
             int size) {
-        // 默认按创建时间降序排序
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // 默认按发布时间降序排序（如果没有发布时间则按创建时间）
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "publishedAt"));
 
         // 如果没有任何过滤条件，根据排序方式返回所有已发布的博客
         if ((keyword == null || keyword.trim().isEmpty()) &&
@@ -159,9 +186,9 @@ public class BlogService {
                     return blogRepository.findBlogsWithFiltersOrderByPopularity(null, null, null, pageable);
                 case "publishTime":
                 default:
-                    // 创建按创建时间降序排序的Pageable
+                    // 创建按发布时间降序排序的Pageable（查询中会自动处理publishedAt为空的情况）
                     Pageable publishTimePageable = PageRequest.of(page, size,
-                            Sort.by(Sort.Direction.DESC, "createdAt"));
+                            Sort.by(Sort.Direction.DESC, "publishedAt"));
                     return blogRepository.findBlogsWithFilters(null, null, null, publishTimePageable);
             }
         }
@@ -174,9 +201,9 @@ public class BlogService {
                 return blogRepository.findBlogsWithFiltersOrderByPopularity(keyword, category, tag, pageable);
             case "publishTime":
             default:
-                // 创建按创建时间降序排序的Pageable
+                // 创建按发布时间降序排序的Pageable（查询中会自动处理publishedAt为空的情况）
                 Pageable publishTimePageable = PageRequest.of(page, size,
-                        Sort.by(Sort.Direction.DESC, "createdAt"));
+                        Sort.by(Sort.Direction.DESC, "publishedAt"));
                 return blogRepository.findBlogsWithFilters(
                         keyword != null ? keyword.trim() : null,
                         category != null ? category.trim() : null,
@@ -354,7 +381,7 @@ public class BlogService {
         Optional<User> userOpt = userService.findById(userId);
         if (userOpt.isPresent()) {
             String authorName = userOpt.get().getUsername();
-            return blogRepository.findByAuthorNameOrderByCreatedAtDesc(authorName);
+            return blogRepository.findByAuthorNameOrderByPublishedAtDesc(authorName);
         }
         return new ArrayList<>();
     }

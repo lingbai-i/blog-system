@@ -230,6 +230,14 @@ watch(() => props.modelValue, (newValue) => {
     if (editorMode.value === 'markdown' && newValue) {
       markdownContent.value = turndownService.turndown(newValue)
     }
+    // 如果是富文本模式，确保工具栏提示正常显示
+    if (editorMode.value === 'rich') {
+      nextTick(() => {
+        setTimeout(() => {
+          addToolbarTooltips()
+        }, 50)
+      })
+    }
   }
 })
 
@@ -237,6 +245,12 @@ watch(() => props.modelValue, (newValue) => {
 const handleContentChange = (newContent) => {
   content.value = newContent
   emit('update:modelValue', newContent)
+  // 确保工具栏提示正常显示
+  nextTick(() => {
+    setTimeout(() => {
+      addToolbarTooltips()
+    }, 50)
+  })
 }
 
 // 处理Markdown内容变化
@@ -262,6 +276,12 @@ const handleModeChange = (mode) => {
       content.value = htmlContent
       emit('update:modelValue', htmlContent)
     }
+    // 切换到富文本模式后，重新添加工具栏提示
+    nextTick(() => {
+      setTimeout(() => {
+        addToolbarTooltips()
+      }, 100)
+    })
   }
 }
 

@@ -38,6 +38,12 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
        // 根据作者名称查找博客（包括未发布的）
        List<Blog> findByAuthorNameOrderByCreatedAtDesc(String authorName);
 
+       // 根据作者名称查找博客（包括未发布的），按发布时间和创建时间排序
+       @Query("SELECT b FROM Blog b WHERE b.authorName = :authorName ORDER BY " +
+              "CASE WHEN b.publishedAt IS NOT NULL THEN b.publishedAt " +
+              "ELSE b.createdAt END DESC")
+       List<Blog> findByAuthorNameOrderByPublishedAtDesc(@Param("authorName") String authorName);
+
        // 查找热门博客（按浏览量排序）
        @Query("SELECT b FROM Blog b WHERE b.isPublished = true ORDER BY b.viewCount DESC")
        List<Blog> findPopularBlogs(Pageable pageable);
@@ -77,7 +83,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
                      "b.isPublished = true AND " +
                      "(:keyword IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
                      "(:category IS NULL OR b.category = :category) AND " +
-                     "(:tag IS NULL OR t.name = :tag) ORDER BY b.createdAt DESC")
+                     "(:tag IS NULL OR t.name = :tag) ORDER BY " +
+                     "CASE WHEN b.publishedAt IS NOT NULL THEN b.publishedAt " +
+                     "ELSE b.createdAt END DESC")
        Page<Blog> findBlogsWithFilters(@Param("keyword") String keyword,
                      @Param("category") String category,
                      @Param("tag") String tag,

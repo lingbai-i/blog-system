@@ -243,7 +243,7 @@
               <div class="article-text">
                 <h3 class="article-title">{{ article.title }}</h3>
                 <p class="article-summary">
-                  {{ article.summary || article.content?.substring(0, 150) + "..." }}
+                  {{ getPlainTextSummary(article) }}
                 </p>
                 <div class="article-meta">
                   <span class="author">
@@ -725,6 +725,7 @@ const formatDate = (dateString) => {
 // 获取文章的第一张图片
 const getFirstImage = (article) => {
   console.log('获取文章图片:', article.id, article.images);
+  console.log('文章完整数据:', article);
   
   if (!article.images) {
     console.log('文章无images字段:', article.id);
@@ -737,18 +738,23 @@ const getFirstImage = (article) => {
       : article.images;
     
     console.log('解析后的images:', images);
+    console.log('images类型:', typeof images, 'isArray:', Array.isArray(images));
     
     if (Array.isArray(images) && images.length > 0) {
       const imageUrl = images[0];
+      console.log('原始图片URL:', imageUrl);
       // 确保URL是完整的访问路径
       const fullUrl = imageUrl.startsWith('http') ? imageUrl : `http://localhost:8080${imageUrl}`;
       console.log('返回图片URL:', fullUrl);
       return fullUrl;
+    } else {
+      console.log('images不是数组或为空:', images);
     }
   } catch (error) {
     console.error('解析图片数据失败:', error, article.images);
   }
   
+  console.log('未找到有效图片，返回null');
   return null;
 };
 
@@ -777,6 +783,27 @@ const getTagsArray = (tags) => {
   }
   
   return [];
+};
+
+// 去除HTML标签，获取纯文本摘要
+const getPlainTextSummary = (article) => {
+  // 如果有summary字段，直接使用
+  if (article.summary && article.summary.trim()) {
+    return article.summary;
+  }
+  
+  // 如果没有summary，从content中提取纯文本
+  if (article.content) {
+    // 去除HTML标签
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = article.content;
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // 返回前150个字符
+    return plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');
+  }
+  
+  return '暂无摘要';
 };
 </script>
 
@@ -824,8 +851,6 @@ const getTagsArray = (tags) => {
 .logo h1:hover {
   opacity: 0.8;
 }
-
-
 
 .user-section {
   display: flex;
@@ -1099,8 +1124,6 @@ const getTagsArray = (tags) => {
 .comments:hover {
   color: rgba(5, 150, 105, 1) !important;
 }
-
-
 
 .article-tags {
   display: flex;

@@ -15,6 +15,10 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     // 查找所有已发布的公告，按发布时间倒序
     List<Announcement> findByIsPublishedTrueOrderByPublishedAtDesc();
 
+    // 查找所有已发布的公告，置顶公告在前，然后按发布时间倒序
+    @Query("SELECT a FROM Announcement a WHERE a.isPublished = true ORDER BY a.isPinned DESC, a.publishedAt DESC")
+    List<Announcement> findPublishedAnnouncementsOrderByPinnedAndPublishedAt();
+
     // 查找所有置顶的已发布公告
     List<Announcement> findByIsPublishedTrueAndIsPinnedTrueOrderByPublishedAtDesc();
 

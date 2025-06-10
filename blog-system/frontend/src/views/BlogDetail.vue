@@ -155,6 +155,8 @@ import { ArrowLeft, User, Calendar, View, Share, Star, TrendCharts } from '@elem
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 import CommentSection from '@/components/CommentSection.vue'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 
 const router = useRouter()
 const route = useRoute()
@@ -175,8 +177,42 @@ const currentPreviewImage = ref('')
 const formattedContent = computed(() => {
   if (!blog.value?.content) return ''
   
-  // 直接使用原始内容，保持换行格式
-  let content = blog.value.content.replace(/\n/g, '<br>')
+  let content = blog.value.content
+  
+  // 检查内容是否包含 HTML 标签（Quill 编辑器生成的内容）
+  const hasHtmlTags = /<[^>]+>/.test(content)
+  
+  if (!hasHtmlTags) {
+    // 如果是纯文本，转换换行符
+    content = content.replace(/\n/g, '<br>')
+  } else {
+    // 如果是 HTML 内容，先处理通用的 HTML 实体
+    content = content
+      .replace(/&nbsp;/g, ' ')  // 处理非断行空格
+      .replace(/&#160;/g, ' ')  // 处理数字实体形式的非断行空格
+    
+    // 查找所有的 <pre> 标签并应用语法高亮
+    content = content.replace(/<pre class="ql-syntax"[^>]*>([\s\S]*?)<\/pre>/g, (match, code) => {
+      // 解码 HTML 实体
+      const decodedCode = code
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')  // 处理非断行空格
+        .replace(/&#160;/g, ' ')  // 处理数字实体形式的非断行空格
+      
+      try {
+        // 自动检测语言并高亮
+        const result = hljs.highlightAuto(decodedCode)
+        return `<pre class="hljs"><code class="hljs language-${result.language || 'plaintext'}">${result.value}</code></pre>`
+      } catch (error) {
+        console.error('代码高亮失败:', error)
+        return `<pre class="hljs"><code class="hljs">${hljs.utils.escapeHtml(decodedCode)}</code></pre>`
+      }
+    })
+  }
   
   // 如果有图片，在内容后面添加图片
   if (blog.value.images) {
@@ -717,6 +753,50 @@ onMounted(() => {
 
 .article-content :deep(li) {
   margin-bottom: 0.5rem;
+}
+
+/* 代码块样式 */
+.article-content :deep(pre.hljs) {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.article-content :deep(code.hljs) {
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+}
+
+.article-content :deep(code) {
+  background: #f6f8fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* Quill 编辑器原生代码块样式兼容 */
+.article-content :deep(.ql-syntax) {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #24292e;
+  white-space: pre-wrap;
 }
 
 .article-footer {

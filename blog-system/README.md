@@ -431,6 +431,6 @@ CMD ["java", "-jar", "app.jar"]
 
 ---
 
-**开发团队**: Blog System Development Team  
+**开发团队**:mycc-lingbai-i Teams  
 **最后更新**: 2025 年 1 月 15 日  
 **项目状态**: 🟢 活跃开发中
