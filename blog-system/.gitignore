@@ -49,3 +49,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Claude Code ###
+.claude/
+
+### User Uploads ###
+uploads/
+
+### Vercel ###
+.vercel/
+.trae/

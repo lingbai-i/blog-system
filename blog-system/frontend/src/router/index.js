@@ -23,12 +23,12 @@ const routes = [
   },
   {
     path: '/admin',
-    name: 'Admin',
     component: () => import('../views/Admin.vue'),
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
+        name: 'Admin',
         redirect: { name: 'AdminBlogs' }
       },
       {

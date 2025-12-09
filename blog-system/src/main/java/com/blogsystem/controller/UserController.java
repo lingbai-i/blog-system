@@ -24,27 +24,21 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<Object> registerUser(@RequestBody Map<String, String> request) {
         try {
-            String account = request.get("account");
             String username = request.get("username");
             String email = request.get("email");
             String password = request.get("password");
-            String fullName = request.get("fullName"); // 可选字段
-
-            // 如果没有提供account，使用username作为account
-            if (account == null || account.trim().isEmpty()) {
-                account = username;
-            }
+            String nickname = request.get("nickname"); // 可选字段
 
             // email字段为可选，如果为空则设置为null
             if (email != null && email.trim().isEmpty()) {
                 email = null;
             }
 
-            if (fullName == null || fullName.trim().isEmpty()) {
-                fullName = username; // 如果没有提供fullName，使用username作为默认值
+            if (nickname == null || nickname.trim().isEmpty()) {
+                nickname = username; // 如果没有提供nickname，使用username作为默认值
             }
 
-            User user = userService.registerUser(account, username, email, password, fullName);
+            User user = userService.registerUser(username, email, password, nickname);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -91,7 +85,7 @@ public class UserController {
             return ResponseEntity.ok(response);
         } else {
             response.put("success", false);
-            response.put("message", "账号或密码错误");
+            response.put("message", "用户名/邮箱或密码错误");
             return ResponseEntity.badRequest().body(response);
         }
     }

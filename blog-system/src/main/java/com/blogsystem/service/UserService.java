@@ -45,23 +45,25 @@ public class UserService {
 
     // 用户登录验证
     public Optional<User> authenticate(String account, String password) {
-        Optional<User> userOpt = userRepository.findByAccount(account);
+        // 先尝试用户名登录
+        Optional<User> userOpt = userRepository.findByUsername(account);
+        
+        // 如果用户名找不到，尝试邮箱登录
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByEmail(account);
+        }
+        
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             // 这里应该验证加密后的密码，简化处理直接比较
             if (password.equals(user.getPassword())) {
                 // 更新最后登录时间
-                user.setLastLogin(LocalDateTime.now());
+                user.setLastLoginTime(LocalDateTime.now());
                 userRepository.save(user);
                 return Optional.of(user);
             }
         }
         return Optional.empty();
-    }
-
-    // 检查账号是否存在
-    public boolean existsByAccount(String account) {
-        return userRepository.existsByAccount(account);
     }
 
     // 检查用户名是否存在
@@ -90,11 +92,8 @@ public class UserService {
     }
 
     // 用户注册
-    public User registerUser(String account, String username, String email, String password, String fullName) {
-        // 检查账号、用户名和邮箱是否已存在
-        if (existsByAccount(account)) {
-            throw new RuntimeException("账号已存在");
-        }
+    public User registerUser(String username, String email, String password, String nickname) {
+        // 检查用户名和邮箱是否已存在
         if (existsByUsername(username)) {
             throw new RuntimeException("用户名已存在");
         }
@@ -104,12 +103,11 @@ public class UserService {
         }
 
         User user = new User();
-        user.setAccount(account);
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(password); // 实际应用中需要加密
-        user.setFullName(fullName);
-        user.setIsAdmin(false);
+        user.setNickname(nickname);
+        user.setRole(User.Role.USER);
 
         return userRepository.save(user);
     }
@@ -134,7 +132,7 @@ public class UserService {
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            user.setIsAdmin(isAdmin);
+            user.setRole(isAdmin ? User.Role.ADMIN : User.Role.USER);
             return userRepository.save(user);
         }
         return null;

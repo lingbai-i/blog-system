@@ -1,6 +1,7 @@
 package com.blogsystem.service;
 
 import com.blogsystem.entity.Category;
+import com.blogsystem.enums.ArticleStatus;
 import com.blogsystem.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -118,7 +119,7 @@ public class CategoryService {
 
     // 获取分类统计信息
     public List<Category> getCategoriesWithBlogCount() {
-        List<Object[]> results = categoryRepository.findCategoriesWithBlogCount();
+        List<Object[]> results = categoryRepository.findCategoriesWithBlogCount(ArticleStatus.PUBLISHED);
         return results.stream().map(result -> {
             Category category = (Category) result[0];
             Long blogCount = (Long) result[1];
@@ -129,7 +130,7 @@ public class CategoryService {
 
     // 获取有博客的分类
     public List<Category> getCategoriesWithPublishedBlogs() {
-        return categoryRepository.findCategoriesWithPublishedBlogs();
+        return categoryRepository.findCategoriesWithPublishedBlogs(ArticleStatus.PUBLISHED);
     }
 
     // 统计激活的分类数量

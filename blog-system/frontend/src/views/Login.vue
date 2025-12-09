@@ -14,16 +14,10 @@
             <el-icon size="48"><User /></el-icon>
           </div>
           <h1 class="login-title">欢迎回来</h1>
-          <p class="login-subtitle">请选择登录类型并输入您的账号密码</p>
+          <p class="login-subtitle">请输入您的账号密码</p>
         </div>
 
-        <!-- 登录类型选择 -->
-        <div class="login-type">
-          <el-radio-group v-model="loginType" class="login-type-group">
-            <el-radio-button value="user">普通用户</el-radio-button>
-            <el-radio-button value="admin">管理员</el-radio-button>
-          </el-radio-group>
-        </div>
+
 
         <!-- 账号历史记录 -->
         <div v-if="accountHistory.length > 0" class="account-history">
@@ -43,7 +37,7 @@
               </div>
               <div class="account-info">
                 <div class="account-username">{{ account.username }}</div>
-                <div class="account-type">{{ account.type === 'admin' ? '管理员' : '普通用户' }}</div>
+                <div class="account-type">{{ account.role === 'admin' ? '管理员' : '普通用户' }}</div>
               </div>
               <div class="account-actions">
                 <el-button
@@ -137,8 +131,7 @@ const router = useRouter();
 const loginFormRef = ref();
 const loading = ref(false);
 
-// 登录类型
-const loginType = ref("user");
+
 
 // 账号历史记录
 const accountHistory = ref([]);
@@ -164,18 +157,18 @@ const loadAccountHistory = () => {
 };
 
 // 保存账号到历史记录
-const saveAccountToHistory = (username, type, token) => {
+const saveAccountToHistory = (username, role, token) => {
   const account = {
     id: Date.now().toString(),
     username,
-    type,
+    role,
     token,
     lastLoginTime: new Date().toISOString()
   };
   
   // 移除已存在的相同账号
   accountHistory.value = accountHistory.value.filter(
-    acc => !(acc.username === username && acc.type === type)
+    acc => !(acc.username === username && acc.role === role)
   );
   
   // 添加到开头
@@ -192,10 +185,8 @@ const saveAccountToHistory = (username, type, token) => {
 
 // 选择历史账号
 const selectHistoryAccount = (account) => {
-  loginType.value = account.type;
-  
   // 直接使用保存的token登录
-  if (account.type === 'admin') {
+  if (account.role === 'admin') {
     localStorage.setItem('adminToken', account.token);
     localStorage.setItem('userRole', 'admin');
   } else {
@@ -208,7 +199,7 @@ const selectHistoryAccount = (account) => {
   ElMessage.success(`欢迎回来，${account.username}！`);
   
   // 根据角色跳转到不同页面
-  if (account.type === 'admin') {
+  if (account.role === 'admin') {
     router.push('/admin');
   } else {
     router.push('/');
@@ -250,9 +241,8 @@ const handleLogin = async () => {
     loading.value = true;
 
     try {
-      const endpoint =
-        loginType.value === "admin" ? "/api/admin/login" : "/api/auth/login";
-      const response = await axios.post(endpoint, {
+      // 统一使用用户登录接口
+      const response = await axios.post("/api/auth/login", {
         username: loginForm.username,
         password: loginForm.password,
       });
@@ -261,8 +251,11 @@ const handleLogin = async () => {
         // 保存token和用户信息
         const token = response.data.data.token;
         const userInfo = response.data.data.user || response.data.data;
-
-        if (loginType.value === "admin") {
+        
+        // 根据用户的角色信息自动设置权限
+        const userRole = userInfo.isAdmin || userInfo.role === 'ADMIN' ? 'admin' : 'user';
+        
+        if (userRole === "admin") {
           localStorage.setItem("adminToken", token);
           localStorage.setItem("userRole", "admin");
         } else {
@@ -278,7 +271,7 @@ const handleLogin = async () => {
         // 保存账号到历史记录
         saveAccountToHistory(
           userInfo.username || loginForm.username,
-          loginType.value,
+          userRole,
           token
         );
 
@@ -291,7 +284,7 @@ const handleLogin = async () => {
         ElMessage.success("登录成功");
 
         // 根据角色跳转到不同页面
-        if (loginType.value === "admin") {
+        if (userRole === "admin") {
           router.push("/admin");
         } else {
           router.push("/");
@@ -304,13 +297,14 @@ const handleLogin = async () => {
 
       // 模拟登录验证
       let loginSuccess = false;
+      let userRole = 'user'; // 默认为普通用户
 
       if (
-        loginType.value === "admin" &&
         loginForm.username === "admin" &&
         loginForm.password === "admin123"
       ) {
         // 管理员登录
+        userRole = 'admin';
         const mockToken = "mock-admin-token-" + Date.now();
         localStorage.setItem("adminToken", mockToken);
         localStorage.setItem("userRole", "admin");
@@ -322,11 +316,11 @@ const handleLogin = async () => {
         loginSuccess = true;
         router.push("/admin");
       } else if (
-        loginType.value === "user" &&
         loginForm.username === "user" &&
         loginForm.password === "user123"
       ) {
         // 普通用户登录
+        userRole = 'user';
         const mockToken = "mock-user-token-" + Date.now();
         localStorage.setItem("userToken", mockToken);
         localStorage.setItem("userRole", "user");
@@ -528,37 +522,7 @@ onMounted(() => {
   font-weight: 400;
 }
 
-.login-type {
-  margin-bottom: 2rem;
-  text-align: center;
-}
 
-.login-type-group {
-  width: 100%;
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 4px;
-}
-
-.login-type-group .el-radio-button {
-  flex: 1;
-}
-
-.login-type-group .el-radio-button__inner {
-  width: 100%;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  transition: all 0.3s ease;
-}
-
-.login-type-group
-  .el-radio-button__original-radio:checked
-  + .el-radio-button__inner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
 
 /* 账号历史记录样式 */
 .account-history {

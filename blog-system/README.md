@@ -4,17 +4,20 @@
 
 ## 📅 项目信息
 
-- **最后更新**: 2025 年 6 月 9 日
-- **版本**: v1.0.0
+- **最后更新**: 2025 年 12 月 9 日
+- **版本**: v1.1.0
 - **开发状态**: 活跃开发中
 - **许可证**: MIT License
 
-## 🎯 最新更新 (2025 年 6 月)
+## 🎯 最新更新 (2025 年 12 月)
 
-- ✅ **项目配置优化**：统一前后端端口配置，确保开发环境一致性
-- ✅ **文档更新**：更新项目文档和启动指南，优化部署流程
-- ✅ **前端界面更新**：更新项目发布时间和版本信息显示
-- ✅ **CORS配置修正**：修正跨域配置，确保前后端正常通信
+- ✅ **Docker部署优化**：重构Docker部署架构，优化启动脚本和配置
+- ✅ **Vercel部署支持**：添加Vercel云平台部署配置，支持前端快速部署
+- ✅ **数据库配置优化**：更新数据库设置和配置文档，提升数据管理效率
+- ✅ **评论功能完善**：修复评论回复功能，支持独立提交文字或图片
+- ✅ **富文本编辑增强**：修复富文本编辑器图片上传功能，优化搜索框样式
+- ✅ **枚举类型重构**：新增文章状态枚举和目标类型枚举，提升代码规范性
+- ✅ **文档完善**：新增数据通信传输机制详细文档，完善项目功能文档
 - ✅ **公告系统完善**：实现了完整的公告发布、管理和展示功能
 - ✅ **用户头像上传**：支持多种图片格式的头像上传和显示
 - ✅ **文章点赞功能**：实现文章点赞、点赞计数和防重复点赞机制
@@ -33,7 +36,7 @@
 
   - 创建、编辑、删除博客文章
   - 支持 Markdown 和富文本编辑
-  - 文章草稿和发布状态管理
+  - 文章状态管理（草稿/已发布/已归档）
   - 文章图片上传和管理
 
 - **文章展示功能**
@@ -371,8 +374,17 @@ java -jar -Xms512m -Xmx1024m -Dspring.profiles.active=prod target/blog-system-0.
 
 ### Docker 部署
 
+项目已优化 Docker 部署架构，支持前后端分离部署：
+
+1. **使用 Docker Compose 一键部署**:
+
+```bash
+docker-compose up -d
+```
+
+2. **单独部署后端**:
+
 ```dockerfile
-# Dockerfile 示例
 FROM openjdk:21-jre-slim
 
 WORKDIR /app
@@ -381,8 +393,59 @@ COPY target/blog-system-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-jar", "-Xms512m", "-Xmx1024m", "app.jar"]
 ```
+
+3. **单独部署前端**:
+
+```dockerfile
+FROM node:18-alpine as builder
+
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ ./
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
+```
+
+### Vercel 部署
+
+项目支持通过 Vercel 快速部署前端应用：
+
+1. **在 Vercel 平台部署**:
+
+   - 将项目推送到 GitHub 仓库
+   - 在 Vercel 控制台导入项目
+   - Vercel 会自动识别 `vercel.json` 配置并部署
+
+2. **使用 Vercel CLI 部署**:
+
+```bash
+# 安装 Vercel CLI
+npm install -g vercel
+
+# 部署项目
+vercel
+
+# 生产环境部署
+vercel --prod
+```
+
+3. **环境变量配置**:
+
+在 Vercel 项目设置中配置以下环境变量：
+
+```
+VITE_API_BASE_URL=your_backend_api_url
+```
+
+**注意**: Vercel 部署仅支持前端应用，后端 API 需要单独部署到支持 Java 的平台（如 Railway、Render 等）。
 
 ## 🤝 贡献指南
 
@@ -393,6 +456,28 @@ CMD ["java", "-jar", "app.jar"]
 5. 开启 Pull Request
 
 ## 📝 更新日志
+
+### v1.1.0 (2025-12-09)
+
+- 🚀 **部署优化**
+  - 重构 Docker 部署架构，优化启动脚本
+  - 添加 Vercel 云平台部署支持
+  - 完善 Docker Compose 配置
+
+- 🔧 **功能改进**
+  - 修复评论回复功能，支持独立提交文字或图片
+  - 修复富文本编辑器图片上传功能
+  - 优化搜索框样式和用户体验
+
+- 📦 **代码重构**
+  - 新增文章状态枚举（ArticleStatus）
+  - 新增目标类型枚举（TargetType）
+  - 优化代码结构和规范性
+
+- 📚 **文档完善**
+  - 新增数据通信传输机制详细文档
+  - 更新数据库设置和配置文档
+  - 完善项目功能文档和代码示例
 
 ### v1.0.0 (2025-01-15)
 
@@ -431,6 +516,7 @@ CMD ["java", "-jar", "app.jar"]
 
 ---
 
-**开发团队**:mycc-lingbai-i Teams  
-**最后更新**: 2025 年 1 月 15 日  
+**开发团队**: mycc-lingbai-i Teams
+**最后更新**: 2025 年 12 月 9 日
+**项目版本**: v1.1.0
 **项目状态**: 🟢 活跃开发中

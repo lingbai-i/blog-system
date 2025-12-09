@@ -1,10 +1,12 @@
 package com.blogsystem.repository;
 
 import com.blogsystem.entity.Category;
+import com.blogsystem.enums.ArticleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -35,10 +37,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     long countByIsActiveTrue();
 
     // 查询分类及其博客数量
-    @Query("SELECT c, COUNT(b) as blogCount FROM Category c LEFT JOIN c.blogs b WHERE c.isActive = true GROUP BY c ORDER BY c.name ASC")
-    List<Object[]> findCategoriesWithBlogCount();
+    @Query("SELECT c, COUNT(b) as blogCount FROM Category c LEFT JOIN c.blogs b WHERE c.isActive = true AND (b IS NULL OR b.status = :status) GROUP BY c ORDER BY c.name ASC")
+    List<Object[]> findCategoriesWithBlogCount(@Param("status") ArticleStatus status);
 
     // 查询有博客的分类
-    @Query("SELECT DISTINCT c FROM Category c JOIN c.blogs b WHERE c.isActive = true AND b.isPublished = true ORDER BY c.name ASC")
-    List<Category> findCategoriesWithPublishedBlogs();
+    @Query("SELECT DISTINCT c FROM Category c JOIN c.blogs b WHERE c.isActive = true AND b.status = :status ORDER BY c.name ASC")
+    List<Category> findCategoriesWithPublishedBlogs(@Param("status") ArticleStatus status);
 }

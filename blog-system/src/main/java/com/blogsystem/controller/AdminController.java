@@ -3,6 +3,7 @@ package com.blogsystem.controller;
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.User;
 import com.blogsystem.entity.Announcement;
+import com.blogsystem.enums.ArticleStatus;
 import com.blogsystem.service.BlogService;
 import com.blogsystem.service.UserService;
 import com.blogsystem.service.AnnouncementService;
@@ -56,9 +57,39 @@ public class AdminController {
             }
         }
 
+        // 创建简化的博客数据传输对象，避免序列化问题
+        Page<Map<String, Object>> blogDTOs = blogs.map(blog -> {
+            Map<String, Object> blogDTO = new HashMap<>();
+            blogDTO.put("id", blog.getId());
+            blogDTO.put("title", blog.getTitle());
+            blogDTO.put("content", blog.getContent());
+            blogDTO.put("summary", blog.getSummary());
+            blogDTO.put("viewCount", blog.getViewCount());
+            blogDTO.put("likeCount", blog.getLikeCount());
+            blogDTO.put("createdAt", blog.getCreatedAt());
+            blogDTO.put("updatedAt", blog.getUpdatedAt());
+            blogDTO.put("publishedAt", blog.getPublishedAt());
+            blogDTO.put("status", blog.getStatus());
+            blogDTO.put("category", blog.getCategory());
+            blogDTO.put("tags", blog.getTags());
+            blogDTO.put("images", blog.getImages());
+            
+            // 添加作者信息（避免序列化代理对象）
+            if (blog.getUser() != null) {
+                Map<String, Object> authorInfo = new HashMap<>();
+                authorInfo.put("id", blog.getUser().getId());
+                authorInfo.put("username", blog.getUser().getUsername());
+                authorInfo.put("nickname", blog.getUser().getNickname());
+                authorInfo.put("avatar", blog.getUser().getAvatar());
+                blogDTO.put("author", authorInfo);
+            }
+            
+            return blogDTO;
+        });
+
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("data", blogs);
+        response.put("data", blogDTOs);
 
         return ResponseEntity.ok(response);
     }
@@ -204,8 +235,9 @@ public class AdminController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Boolean isPublished = (Boolean) request.get("isPublished");
-            Blog updatedBlog = blogService.updateBlogStatus(id, isPublished);
+            String statusStr = (String) request.get("status");
+            ArticleStatus status = ArticleStatus.valueOf(statusStr.toUpperCase());
+            Blog updatedBlog = blogService.updateBlogStatus(id, status);
             response.put("success", true);
             response.put("message", "状态更新成功");
             response.put("data", updatedBlog);

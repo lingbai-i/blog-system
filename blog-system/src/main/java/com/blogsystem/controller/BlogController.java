@@ -40,11 +40,8 @@ public class BlogController {
         // 将Page<Blog>转换为Page<BlogDTO>，包含作者头像信息
         Page<BlogDTO> blogDTOs = blogs.map(blog -> {
             User author = null;
-            if (blog.getAuthorName() != null) {
-                Optional<User> authorOpt = userService.findByUsername(blog.getAuthorName());
-                if (authorOpt.isPresent()) {
-                    author = authorOpt.get();
-                }
+            if (blog.getUser() != null) {
+                author = blog.getUser();
             }
             return BlogDTO.fromEntity(blog, author);
         });
@@ -58,14 +55,8 @@ public class BlogController {
         Optional<Blog> blogOpt = blogService.findByIdAndIncrementView(id);
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-            // 根据作者名获取作者信息
-            User author = null;
-            if (blog.getAuthorName() != null) {
-                Optional<User> authorOpt = userService.findByUsername(blog.getAuthorName());
-                if (authorOpt.isPresent()) {
-                    author = authorOpt.get();
-                }
-            }
+            // 根据作者关联获取作者信息
+            User author = blog.getUser();
             BlogDTO blogDTO = BlogDTO.fromEntity(blog, author);
             return ResponseEntity.ok(blogDTO);
         }
@@ -87,7 +78,7 @@ public class BlogController {
                         Long userId = Long.parseLong(parts[1]);
                         Optional<User> userOpt = userService.findById(userId);
                         if (userOpt.isPresent()) {
-                            blog.setAuthorName(userOpt.get().getUsername());
+                            blog.setUser(userOpt.get());
                         }
                     }
                 } catch (NumberFormatException e) {
@@ -131,9 +122,9 @@ public class BlogController {
                     String userRole = currentUser.getIsAdmin() ? "admin" : "user";
 
                     // 检查权限：管理员或文章作者可以更新
-                    if ("admin".equals(userRole) || currentUsername.equals(existingBlog.getAuthorName())) {
+                    if ("admin".equals(userRole) || (existingBlog.getUser() != null && currentUsername.equals(existingBlog.getUser().getUsername()))) {
                         // 设置作者信息
-                        blog.setAuthorName(currentUsername);
+                        blog.setUser(currentUser);
                         blog.setId(id);
                         Blog updatedBlog = blogService.updateBlog(blog);
                         return ResponseEntity.ok(updatedBlog);
@@ -183,7 +174,7 @@ public class BlogController {
                     String userRole = deleteUser.getIsAdmin() ? "admin" : "user";
 
                     // 检查权限：管理员或文章作者可以删除
-                    if ("admin".equals(userRole) || currentUsername.equals(blog.getAuthorName())) {
+                    if ("admin".equals(userRole) || (blog.getUser() != null && currentUsername.equals(blog.getUser().getUsername()))) {
                         blogService.deleteBlog(id);
                         return ResponseEntity.ok().build();
                     } else {
@@ -249,13 +240,7 @@ public class BlogController {
         // 将List<Blog>转换为List<BlogDTO>，包含作者头像信息
         List<BlogDTO> blogDTOs = new ArrayList<>();
         for (Blog blog : blogs) {
-            User author = null;
-            if (blog.getAuthorName() != null) {
-                Optional<User> authorOpt = userService.findByUsername(blog.getAuthorName());
-                if (authorOpt.isPresent()) {
-                    author = authorOpt.get();
-                }
-            }
+            User author = blog.getUser(); // 直接使用关联的用户
             blogDTOs.add(BlogDTO.fromEntity(blog, author));
         }
 
@@ -299,7 +284,7 @@ public class BlogController {
                     String userRole = publishUser.getIsAdmin() ? "admin" : "user";
 
                     // 检查权限：管理员或文章作者可以发布
-                    if ("admin".equals(userRole) || currentUsername.equals(existingBlog.getAuthorName())) {
+                    if ("admin".equals(userRole) || (existingBlog.getUser() != null && currentUsername.equals(existingBlog.getUser().getUsername()))) {
                         Blog blog = blogService.publishBlog(id);
                         if (blog != null) {
                             return ResponseEntity.ok(blog);
@@ -351,7 +336,7 @@ public class BlogController {
                     String userRole = unpublishUser.getIsAdmin() ? "admin" : "user";
 
                     // 检查权限：管理员或文章作者可以取消发布
-                    if ("admin".equals(userRole) || currentUsername.equals(existingBlog.getAuthorName())) {
+                    if ("admin".equals(userRole) || (existingBlog.getUser() != null && currentUsername.equals(existingBlog.getUser().getUsername()))) {
                         Blog blog = blogService.unpublishBlog(id);
                         if (blog != null) {
                             return ResponseEntity.ok(blog);

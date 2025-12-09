@@ -1,9 +1,6 @@
 package com.blogsystem.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -13,26 +10,26 @@ import java.util.List;
 
 @Entity
 @Table(name = "tags")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Tag {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, unique = true, length = 30)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 50)
-    private String slug;
-
-    @Column(length = 200)
+    @Column(length = 500)
     private String description;
 
-    @Column(name = "color_code", length = 7)
+    @Column(length = 50)
+    private String slug;
+
+    @Column(name = "color", length = 7)
     private String colorCode; // 用于前端显示的颜色代码，如 #28A745
+
+    @Column(name = "usage_count")
+    private Integer usageCount = 0;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -54,6 +51,10 @@ public class Tag {
     @Transient
     private Long blogCount;
 
+    // 构造器
+    public Tag() {
+    }
+
     public Tag(String name) {
         this.name = name;
     }
@@ -63,21 +64,92 @@ public class Tag {
         this.description = description;
     }
 
-    public Tag(String name, String description, String colorCode) {
+    // 手动添加getter/setter方法
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getColorCode() {
+        return colorCode;
+    }
+
+    public void setColorCode(String colorCode) {
         this.colorCode = colorCode;
     }
 
-    // 便于调试的toString方法
-    @Override
-    public String toString() {
-        return "Tag{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", colorCode='" + colorCode + '\'' +
-                ", isActive=" + isActive +
-                '}';
+    public Integer getUsageCount() {
+        return usageCount;
+    }
+
+    public void setUsageCount(Integer usageCount) {
+        this.usageCount = usageCount;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public List<Blog> getBlogs() {
+        return blogs;
+    }
+
+    public void setBlogs(List<Blog> blogs) {
+        this.blogs = blogs;
+    }
+
+    public Long getBlogCount() {
+        return blogCount;
+    }
+
+    public void setBlogCount(Long blogCount) {
+        this.blogCount = blogCount;
     }
 }

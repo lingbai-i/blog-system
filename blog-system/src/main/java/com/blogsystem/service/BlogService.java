@@ -3,8 +3,10 @@ package com.blogsystem.service;
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.User;
 import com.blogsystem.entity.UserLike;
+import com.blogsystem.entity.TargetType;
 import com.blogsystem.entity.Category;
 import com.blogsystem.entity.Tag;
+import com.blogsystem.enums.ArticleStatus;
 import com.blogsystem.repository.BlogRepository;
 import com.blogsystem.repository.UserLikeRepository;
 import com.blogsystem.service.CategoryService;
@@ -52,7 +54,7 @@ public class BlogService {
     // 创建博客
     public Blog createBlog(Blog blog) {
         // 处理发布时间
-        if (blog.getIsPublished() != null && blog.getIsPublished()) {
+        if (blog.getStatus() != null && blog.getStatus() == ArticleStatus.PUBLISHED) {
             // 如果是发布状态，设置发布时间为当前时间
             blog.setPublishedAt(LocalDateTime.now());
         }
@@ -82,7 +84,7 @@ public class BlogService {
             Blog existingBlog = existingBlogOpt.get();
             
             // 处理发布时间逻辑
-            if (blog.getIsPublished() != null && blog.getIsPublished()) {
+            if (blog.getStatus() != null && blog.getStatus() == ArticleStatus.PUBLISHED) {
                 // 如果当前要发布文章
                 if (existingBlog.getPublishedAt() == null) {
                     // 如果原来没有发布时间，设置为当前时间（首次发布）
@@ -146,25 +148,25 @@ public class BlogService {
     // 获取所有已发布的博客（分页）
     public Page<Blog> findPublishedBlogs(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByIsPublishedTrueOrderByCreatedAtAsc(pageable);
+        return blogRepository.findByStatusOrderByCreatedAtAsc(ArticleStatus.PUBLISHED, pageable);
     }
 
     // 搜索博客
     public Page<Blog> searchBlogs(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByTitleContainingIgnoreCaseAndIsPublishedTrue(keyword, pageable);
+        return blogRepository.findByTitleContainingIgnoreCaseAndStatus(keyword, ArticleStatus.PUBLISHED, pageable);
     }
 
     // 根据分类查找博客
     public Page<Blog> findBlogsByCategory(String category, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByCategoryAndIsPublishedTrueOrderByCreatedAtDesc(category, pageable);
+        return blogRepository.findByCategoryAndStatusOrderByCreatedAtDesc(category, ArticleStatus.PUBLISHED, pageable);
     }
 
     // 根据标签查找博客
     public Page<Blog> findBlogsByTag(String tag, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByTagsContaining(tag, pageable);
+        return blogRepository.findByTagsContaining(tag, ArticleStatus.PUBLISHED, pageable);
     }
 
     // 多条件组合搜索博客
@@ -181,24 +183,24 @@ public class BlogService {
             // 根据排序方式使用不同的查询方法
             switch (sort) {
                 case "liked":
-                    return blogRepository.findBlogsWithFiltersOrderByLikes(null, null, null, pageable);
+                    return blogRepository.findBlogsWithFiltersOrderByLikes(null, null, null, ArticleStatus.PUBLISHED, pageable);
                 case "popular":
-                    return blogRepository.findBlogsWithFiltersOrderByPopularity(null, null, null, pageable);
+                    return blogRepository.findBlogsWithFiltersOrderByPopularity(null, null, null, ArticleStatus.PUBLISHED, pageable);
                 case "publishTime":
                 default:
                     // 创建按发布时间降序排序的Pageable（查询中会自动处理publishedAt为空的情况）
                     Pageable publishTimePageable = PageRequest.of(page, size,
                             Sort.by(Sort.Direction.DESC, "publishedAt"));
-                    return blogRepository.findBlogsWithFilters(null, null, null, publishTimePageable);
+                    return blogRepository.findBlogsWithFilters(null, null, null, ArticleStatus.PUBLISHED, publishTimePageable);
             }
         }
 
         // 使用对应的排序查询方法
         switch (sort) {
             case "liked":
-                return blogRepository.findBlogsWithFiltersOrderByLikes(keyword, category, tag, pageable);
+                return blogRepository.findBlogsWithFiltersOrderByLikes(keyword, category, tag, ArticleStatus.PUBLISHED, pageable);
             case "popular":
-                return blogRepository.findBlogsWithFiltersOrderByPopularity(keyword, category, tag, pageable);
+                return blogRepository.findBlogsWithFiltersOrderByPopularity(keyword, category, tag, ArticleStatus.PUBLISHED, pageable);
             case "publishTime":
             default:
                 // 创建按发布时间降序排序的Pageable（查询中会自动处理publishedAt为空的情况）
@@ -208,6 +210,7 @@ public class BlogService {
                         keyword != null ? keyword.trim() : null,
                         category != null ? category.trim() : null,
                         tag != null ? tag.trim() : null,
+                        ArticleStatus.PUBLISHED,
                         publishTimePageable);
         }
     }
@@ -233,7 +236,7 @@ public class BlogService {
     // 获取热门博客
     public List<Blog> getPopularBlogs(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return blogRepository.findPopularBlogs(pageable);
+        return blogRepository.findPopularBlogs(ArticleStatus.PUBLISHED, pageable);
     }
 
     // 管理员搜索所有博客（包括草稿）
@@ -245,7 +248,7 @@ public class BlogService {
     // 管理员搜索草稿博客
     public Page<Blog> searchDraftBlogs(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return blogRepository.findByTitleContainingIgnoreCaseAndIsPublishedFalse(keyword, pageable);
+        return blogRepository.findByTitleContainingIgnoreCaseAndStatus(keyword, ArticleStatus.DRAFT, pageable);
     }
 
     // 获取所有博客（管理员）
@@ -257,7 +260,7 @@ public class BlogService {
     // 获取草稿博客
     public Page<Blog> findDraftBlogs(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "createdAt"));
-        return blogRepository.findByIsPublishedFalseOrderByCreatedAtAsc(pageable);
+        return blogRepository.findByStatusOrderByCreatedAtAsc(ArticleStatus.DRAFT, pageable);
     }
 
     // 获取博客总数
@@ -267,7 +270,7 @@ public class BlogService {
 
     // 获取已发布博客数量
     public long getPublishedBlogsCount() {
-        return blogRepository.countByIsPublishedTrue();
+        return blogRepository.countByStatus(ArticleStatus.PUBLISHED);
     }
 
     // 获取总浏览量
@@ -282,26 +285,26 @@ public class BlogService {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(23, 59, 59);
-        return blogRepository.countByIsPublishedTrueAndCreatedAtBetween(startOfDay, endOfDay);
+        return blogRepository.countByStatusAndCreatedAtBetween(ArticleStatus.PUBLISHED, startOfDay, endOfDay);
     }
 
     // 更新博客状态
-    public Blog updateBlogStatus(Long id, Boolean isPublished) {
+    public Blog updateBlogStatus(Long id, ArticleStatus status) {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("博客不存在"));
-        blog.setIsPublished(isPublished);
+        blog.setStatus(status);
         return blogRepository.save(blog);
     }
 
     // 获取最新博客
     public List<Blog> getLatestBlogs(int limit) {
         Pageable pageable = PageRequest.of(0, limit);
-        return blogRepository.findLatestBlogs(pageable);
+        return blogRepository.findLatestBlogs(ArticleStatus.PUBLISHED, pageable);
     }
 
     // 获取所有分类
     public List<String> getAllCategories() {
-        return blogRepository.findAllCategories();
+        return blogRepository.findAllCategories(ArticleStatus.PUBLISHED);
     }
 
     // 发布博客
@@ -309,7 +312,7 @@ public class BlogService {
         Optional<Blog> blogOpt = blogRepository.findById(id);
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-            blog.setIsPublished(true);
+            blog.setStatus(ArticleStatus.PUBLISHED);
             blog.setPublishedAt(LocalDateTime.now()); // 设置发布时间
             return blogRepository.save(blog);
         }
@@ -321,7 +324,7 @@ public class BlogService {
         Optional<Blog> blogOpt = blogRepository.findById(id);
         if (blogOpt.isPresent()) {
             Blog blog = blogOpt.get();
-            blog.setIsPublished(false);
+            blog.setStatus(ArticleStatus.DRAFT);
             return blogRepository.save(blog);
         }
         return null;
@@ -339,7 +342,7 @@ public class BlogService {
                 blog.setLikeCount(blog.getLikeCount() + 1);
 
                 // 创建用户点赞记录
-                UserLike userLike = new UserLike(userId, id);
+                UserLike userLike = new UserLike(userId, TargetType.ARTICLE, id);
                 userLikeRepository.save(userLike);
 
                 return blogRepository.save(blog);
@@ -355,7 +358,7 @@ public class BlogService {
             Blog blog = blogOpt.get();
 
             // 检查用户是否已经点赞过这篇博客
-            Optional<UserLike> userLikeOpt = userLikeRepository.findByUserIdAndBlogId(userId, id);
+            Optional<UserLike> userLikeOpt = userLikeRepository.findByUserIdAndTargetTypeAndTargetId(userId, TargetType.ARTICLE, id);
             if (userLikeOpt.isPresent()) {
                 // 减少博客点赞数
                 blog.setLikeCount(Math.max(0, blog.getLikeCount() - 1));
@@ -380,15 +383,15 @@ public class BlogService {
         // 根据userId获取用户名
         Optional<User> userOpt = userService.findById(userId);
         if (userOpt.isPresent()) {
-            String authorName = userOpt.get().getUsername();
-            return blogRepository.findByAuthorNameOrderByPublishedAtDesc(authorName);
+            String username = userOpt.get().getUsername();
+            return blogRepository.findByUserUsernameOrderByPublishedAtDesc(username);
         }
         return new ArrayList<>();
     }
 
     // 获取博客总数
     public long getTotalPublishedBlogs() {
-        return blogRepository.countByIsPublishedTrue();
+        return blogRepository.countByStatus(ArticleStatus.PUBLISHED);
     }
 
     // 检查用户是否已点赞博客

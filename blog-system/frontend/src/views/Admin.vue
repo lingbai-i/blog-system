@@ -324,10 +324,10 @@
                 <el-table-column prop="authorName" label="作者" width="120" />
                 <el-table-column prop="createdAt" label="创建时间" width="180" />
                 <el-table-column prop="viewCount" label="浏览量" width="100" />
-                <el-table-column prop="isPublished" label="状态" width="100">
+                <el-table-column prop="status" label="状态" width="100">
                   <template #default="{ row }">
-                    <el-tag :type="row.isPublished ? 'success' : 'info'">
-                      {{ row.isPublished ? '已发布' : '草稿' }}
+                    <el-tag :type="row.status === 'PUBLISHED' ? 'success' : 'info'">
+                      {{ row.status === 'PUBLISHED' ? '已发布' : '草稿' }}
                     </el-tag>
                   </template>
                 </el-table-column>

@@ -52,7 +52,7 @@
           <div class="content-section">
             <RichTextEditor
               v-model="blogForm.content"
-              placeholder="✨ 开始创作您的精彩文章吧！\n\n📝 编辑技巧：\n• 使用顶部工具栏设置文字样式（粗体、斜体、颜色等）\n• 📷 点击图片图标上传并插入图片，让文章更生动\n• 📋 使用列表功能整理要点，让内容更清晰\n• 🔗 添加链接丰富文章内容\n• 💻 插入代码块分享技术经验\n• 📊 使用标题功能构建文章结构\n\n💡 小贴士：保持段落简洁，适当使用空行提升阅读体验"
+              :placeholder="editorPlaceholder"
               height="500px"
               @image-uploaded="handleContentImageSuccess"
               ref="richTextEditor"
@@ -213,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
@@ -242,6 +242,21 @@ const previewVisible = ref(false)
 const draftLoading = ref(false)
 const publishLoading = ref(false)
 const richTextEditor = ref(null)
+
+// 编辑器占位符文本
+const editorPlaceholder = computed(() => {
+  return `✨ 开始创作您的精彩文章吧！
+
+📝 编辑技巧：
+• 使用顶部工具栏设置文字样式（粗体、斜体、颜色等）
+• 📷 点击图片图标上传并插入图片，让文章更生动
+• 📋 使用列表功能整理要点，让内容更清晰
+• 🔗 添加链接丰富文章内容
+• 💻 插入代码块分享技术经验
+• 📊 使用标题功能构建文章结构
+
+💡 小贴士：保持段落简洁，适当使用空行提升阅读体验`
+})
 
 // 上传请求头
 const uploadHeaders = ref({
@@ -393,7 +408,7 @@ const saveDraft = async () => {
       ...blogForm.value,
       images: JSON.stringify(blogForm.value.images),
       tags: JSON.stringify(blogForm.value.tags),
-      isPublished: false
+      status: 'DRAFT'
     }
 
     // 如果不是编辑模式，设置初始计数
@@ -460,7 +475,7 @@ const publishBlog = async () => {
       ...blogForm.value,
       images: JSON.stringify(blogForm.value.images),
       tags: JSON.stringify(blogForm.value.tags),
-      isPublished: true
+      status: 'PUBLISHED'
     }
 
     // 如果不是编辑模式，设置初始计数

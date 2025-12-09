@@ -246,8 +246,8 @@ public class CommentController {
                         }
                         
                         // 2. 文章作者删除任何评论
-                        // 通过authorName查找作者用户
-                        String blogAuthorName = comment.getBlog().getAuthorName();
+                        // 通过User关联查找作者用户
+                        String blogAuthorName = comment.getBlog().getUser() != null ? comment.getBlog().getUser().getUsername() : null;
                         if (blogAuthorName != null && blogAuthorName.equals(currentUser.getUsername())) {
                             canDelete = true;
                         }

@@ -71,8 +71,8 @@
                   <div class="blog-info">
                     <h3 
                       class="blog-title" 
-                      :class="{ 'clickable': blog.isPublished }"
-                      @click="blog.isPublished ? goToBlogDetail(blog.id) : null"
+                      :class="{ 'clickable': blog.status === 'PUBLISHED' }"
+                      @click="blog.status === 'PUBLISHED' ? goToBlogDetail(blog.id) : null"
                     >
                       {{ blog.title }}
                     </h3>
@@ -80,20 +80,20 @@
                     <div class="blog-meta">
                       <span class="meta-item">
                         <el-icon><Calendar /></el-icon>
-                        {{ formatDate(blog.isPublished ? (blog.publishedAt || blog.createdAt) : blog.createdAt) }}
+                        {{ formatDate(blog.status === 'PUBLISHED' ? (blog.publishedAt || blog.createdAt) : blog.createdAt) }}
                       </span>
                       <span class="meta-item">
                         <el-icon><View /></el-icon>
                         {{ blog.viewCount || 0 }}
                       </span>
-                      <el-tag :type="blog.isPublished ? 'success' : 'warning'" size="small">
-                        {{ blog.isPublished ? '已发布' : '草稿' }}
+                      <el-tag :type="blog.status === 'PUBLISHED' ? 'success' : 'warning'" size="small">
+                        {{ blog.status === 'PUBLISHED' ? '已发布' : '草稿' }}
                       </el-tag>
                     </div>
                   </div>
                   <div class="blog-actions">
                     <el-button 
-                      v-if="blog.isPublished" 
+                      v-if="blog.status === 'PUBLISHED'" 
                       size="small" 
                       type="primary" 
                       @click="goToBlogDetail(blog.id)"
@@ -103,10 +103,10 @@
                     <el-button size="small" @click="editBlog(blog)">编辑</el-button>
                     <el-button 
                       size="small" 
-                      :type="blog.isPublished ? 'warning' : 'success'"
+                      :type="blog.status === 'PUBLISHED' ? 'warning' : 'success'"
                       @click="togglePublish(blog)"
                     >
-                      {{ blog.isPublished ? '取消发布' : '发布' }}
+                      {{ blog.status === 'PUBLISHED' ? '取消发布' : '发布' }}
                     </el-button>
                     <el-button size="small" type="danger" @click="deleteBlog(blog)">删除</el-button>
                   </div>
@@ -235,7 +235,7 @@
                       </div>
                     </div>
                     <div v-if="likedArticles.length > 10" class="show-more">
-                      <el-button type="text" @click="showAllLikedArticles = !showAllLikedArticles">
+                      <el-button text @click="showAllLikedArticles = !showAllLikedArticles">
                         {{ showAllLikedArticles ? '收起' : `查看全部${likedArticles.length}篇` }}
                       </el-button>
                     </div>
@@ -554,10 +554,10 @@ const togglePublish = async (blog) => {
       }
     } : {}
     
-    const action = blog.isPublished ? 'unpublish' : 'publish'
+    const action = blog.status === 'PUBLISHED' ? 'unpublish' : 'publish'
     await axios.put(`/api/blogs/${blog.id}/${action}`, {}, config)
-    blog.isPublished = !blog.isPublished
-    ElMessage.success(blog.isPublished ? '文章已发布' : '文章已取消发布')
+    blog.status = blog.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'
+    ElMessage.success(blog.status === 'PUBLISHED' ? '文章已发布' : '文章已取消发布')
   } catch (error) {
     ElMessage.error('操作失败，请稍后重试')
   }
@@ -732,36 +732,73 @@ const fetchStatistics = async () => {
       }
     } : {}
     
-    // 获取当前用户信息
-    const userResponse = await axios.get('/api/auth/profile', config)
-    const currentUser = userResponse.data
+    // 使用已经获取的用户信息，如果没有则尝试从API获取
+    let currentUser = userInfo
     
-    // 检查用户ID是否有效
-    if (!currentUser.id || currentUser.id === 0) {
-      console.warn('用户ID无效，跳过统计数据获取')
+    // 如果userInfo中没有用户名，尝试从API获取
+    if (!currentUser.username) {
+      try {
+        const userResponse = await axios.get('/api/auth/profile', config)
+        currentUser = userResponse.data
+        // 更新userInfo
+        Object.assign(userInfo, currentUser)
+      } catch (error) {
+        console.warn('无法从API获取用户信息，尝试从localStorage获取')
+        const username = localStorage.getItem('username')
+        const userId = localStorage.getItem('userId')
+        if (username) {
+          currentUser = {
+            username: username,
+            id: userId ? parseInt(userId) : null
+          }
+        } else {
+          console.error('无法获取用户信息')
+          ElMessage.warning('请先登录以查看统计数据')
+          return
+        }
+      }
+    }
+    
+    // 检查用户名是否有效
+    if (!currentUser.username) {
+      console.warn('用户名无效，跳过统计数据获取')
       ElMessage.warning('请先登录以查看统计数据')
       return
     }
     
+    console.log('获取统计数据的用户信息:', currentUser)
+    
     // 并行获取各种统计数据
-    const [publishResponse, popularityResponse, likeResponse, likedArticlesResponse] = await Promise.all([
+    const promises = [
       axios.get(`/api/user-statistics/publish/${currentUser.username}`, config),
-      axios.get(`/api/user-statistics/popularity/${currentUser.username}`, config),
-      axios.get(`/api/user-statistics/likes/${currentUser.id}`, config),
-      axios.get(`/api/user-statistics/liked-articles/${currentUser.id}`, config)
-    ])
+      axios.get(`/api/user-statistics/popularity/${currentUser.username}`, config)
+    ]
+    
+    // 只有当用户ID存在时才获取基于ID的统计
+    if (currentUser.id) {
+      promises.push(
+        axios.get(`/api/user-statistics/likes/${currentUser.id}`, config),
+        axios.get(`/api/user-statistics/liked-articles/${currentUser.id}`, config)
+      )
+    }
+    
+    const responses = await Promise.all(promises)
     
     // 更新发布统计
-    Object.assign(publishStats, publishResponse.data)
+    Object.assign(publishStats, responses[0].data)
     
     // 更新热度统计
-    Object.assign(popularityStats, popularityResponse.data)
+    Object.assign(popularityStats, responses[1].data)
     
-    // 更新点赞统计
-    Object.assign(likeStats, likeResponse.data)
-    
-    // 更新我点赞的文章列表
-    likedArticles.value = likedArticlesResponse.data?.content || []
+    // 更新点赞统计（如果有的话）
+    if (responses.length > 2) {
+      Object.assign(likeStats, responses[2].data)
+      likedArticles.value = responses[3].data?.content || []
+    } else {
+      // 重置点赞统计
+      Object.assign(likeStats, { totalLikedArticles: 0 })
+      likedArticles.value = []
+    }
     
   } catch (error) {
     console.warn('获取统计数据失败:', error)

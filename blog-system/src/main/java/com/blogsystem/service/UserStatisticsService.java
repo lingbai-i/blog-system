@@ -2,6 +2,8 @@ package com.blogsystem.service;
 
 import com.blogsystem.entity.Blog;
 import com.blogsystem.entity.UserLike;
+import com.blogsystem.entity.TargetType;
+import com.blogsystem.enums.ArticleStatus;
 import com.blogsystem.repository.BlogRepository;
 import com.blogsystem.repository.UserLikeRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,15 +30,15 @@ public class UserStatisticsService {
     /**
      * 获取用户发布文章统计
      */
-    public Map<String, Object> getUserPublishStatistics(String authorName) {
+    public Map<String, Object> getUserPublishStatistics(String username) {
         Map<String, Object> result = new HashMap<>();
         
         // 总发布文章数
-        long totalPublished = blogRepository.countByAuthorNameAndIsPublished(authorName, true);
+        long totalPublished = blogRepository.countByUserUsernameAndStatus(username, ArticleStatus.PUBLISHED);
         result.put("totalPublished", totalPublished);
         
         // 草稿数
-        long totalDrafts = blogRepository.countByAuthorNameAndIsPublished(authorName, false);
+        long totalDrafts = blogRepository.countByUserUsernameAndStatus(username, ArticleStatus.DRAFT);
         result.put("totalDrafts", totalDrafts);
         
         // 总文章数
@@ -45,12 +47,12 @@ public class UserStatisticsService {
         // 本月发布文章数量
         LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusNanos(1);
-        long thisMonthCount = blogRepository.countByAuthorNameAndIsPublishedAndCreatedAtBetween(authorName, true, startOfMonth, endOfMonth);
+        long thisMonthCount = blogRepository.countByUserUsernameAndStatusAndCreatedAtBetween(username, ArticleStatus.PUBLISHED, startOfMonth, endOfMonth);
         result.put("thisMonthCount", thisMonthCount);
         
         // 按月份统计发布文章数量（最近12个月）
         LocalDateTime startDate = LocalDateTime.now().minusMonths(12);
-        List<Object[]> monthlyStats = blogRepository.findMonthlyPublishStatsByAuthor(authorName, startDate);
+        List<Object[]> monthlyStats = blogRepository.findMonthlyPublishStatsByUser(username, ArticleStatus.PUBLISHED, startDate);
         List<Map<String, Object>> monthlyData = monthlyStats.stream()
             .map(row -> {
                 Map<String, Object> monthData = new HashMap<>();
@@ -65,7 +67,7 @@ public class UserStatisticsService {
         result.put("monthlyStats", monthlyData);
         
         // 按分类统计
-        List<Object[]> categoryStats = blogRepository.findCategoryStatsByAuthor(authorName);
+        List<Object[]> categoryStats = blogRepository.findCategoryStatsByUser(username, ArticleStatus.PUBLISHED);
         List<Map<String, Object>> categoryData = categoryStats.stream()
             .map(row -> {
                 Map<String, Object> catData = new HashMap<>();
@@ -82,19 +84,19 @@ public class UserStatisticsService {
     /**
      * 获取用户文章热度统计
      */
-    public Map<String, Object> getUserPopularityStatistics(String authorName) {
+    public Map<String, Object> getUserPopularityStatistics(String username) {
         Map<String, Object> result = new HashMap<>();
         
         // 总浏览量
-        Long totalViews = blogRepository.sumViewCountByAuthorName(authorName);
+        Long totalViews = blogRepository.sumViewCountByUserUsername(username, ArticleStatus.PUBLISHED);
         result.put("totalViews", totalViews != null ? totalViews : 0);
         
         // 总点赞量
-        Long totalLikes = blogRepository.sumLikeCountByAuthorName(authorName);
+        Long totalLikes = blogRepository.sumLikeCountByUserUsername(username, ArticleStatus.PUBLISHED);
         result.put("totalLikes", totalLikes != null ? totalLikes : 0);
         
         // 平均浏览量
-        long publishedCount = blogRepository.countByAuthorNameAndIsPublished(authorName, true);
+        long publishedCount = blogRepository.countByUserUsernameAndStatus(username, ArticleStatus.PUBLISHED);
         double avgViews = publishedCount > 0 ? (totalViews != null ? totalViews : 0) / (double) publishedCount : 0;
         result.put("avgViews", Math.round(avgViews * 100.0) / 100.0);
         
@@ -104,7 +106,7 @@ public class UserStatisticsService {
         
         // 最受欢迎的文章（按浏览量）
         Pageable topViewsPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "viewCount"));
-        Page<Blog> topViewedBlogs = blogRepository.findByAuthorNameAndIsPublishedOrderByViewCountDesc(authorName, true, topViewsPageable);
+        Page<Blog> topViewedBlogs = blogRepository.findByUserUsernameAndStatusOrderByViewCountDesc(username, ArticleStatus.PUBLISHED, topViewsPageable);
         List<Map<String, Object>> topViewed = topViewedBlogs.getContent().stream()
             .map(blog -> {
                 Map<String, Object> blogData = new HashMap<>();
@@ -119,7 +121,7 @@ public class UserStatisticsService {
         
         // 最受欢迎的文章（按点赞量）
         Pageable topLikesPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "likeCount"));
-        Page<Blog> topLikedBlogs = blogRepository.findByAuthorNameAndIsPublishedOrderByLikeCountDesc(authorName, true, topLikesPageable);
+        Page<Blog> topLikedBlogs = blogRepository.findByUserUsernameAndStatusOrderByLikeCountDesc(username, ArticleStatus.PUBLISHED, topLikesPageable);
         List<Map<String, Object>> topLiked = topLikedBlogs.getContent().stream()
             .map(blog -> {
                 Map<String, Object> blogData = new HashMap<>();
@@ -142,7 +144,7 @@ public class UserStatisticsService {
         Map<String, Object> result = new HashMap<>();
         
         // 用户点赞的文章总数
-        long totalLikedArticles = userLikeRepository.countByUserId(userId);
+        long totalLikedArticles = userLikeRepository.countByUserIdAndTargetType(userId, TargetType.ARTICLE);
         result.put("totalLikedArticles", totalLikedArticles);
         
         return result;
@@ -163,13 +165,13 @@ public class UserStatisticsService {
                 articleData.put("id", blog.getId());
                 articleData.put("title", blog.getTitle());
                 articleData.put("summary", blog.getSummary());
-                articleData.put("authorName", blog.getAuthorName());
+                articleData.put("authorName", blog.getUser() != null ? blog.getUser().getUsername() : "未知作者");
                 articleData.put("category", blog.getCategory());
                 articleData.put("viewCount", blog.getViewCount());
                 articleData.put("likeCount", blog.getLikeCount());
                 articleData.put("createdAt", blog.getCreatedAt());
                 // 获取点赞时间
-                Optional<UserLike> userLike = userLikeRepository.findByUserIdAndBlogId(userId, blogId);
+                Optional<UserLike> userLike = userLikeRepository.findByUserIdAndTargetTypeAndTargetId(userId, TargetType.ARTICLE, blogId);
                 articleData.put("likedAt", userLike.map(UserLike::getCreatedAt).orElse(null));
                 return articleData;
             }
@@ -180,21 +182,21 @@ public class UserStatisticsService {
     /**
      * 获取用户综合统计数据
      */
-    public Map<String, Object> getUserComprehensiveStatistics(Long userId, String authorName) {
+    public Map<String, Object> getUserComprehensiveStatistics(Long userId, String username) {
         Map<String, Object> result = new HashMap<>();
         
         // 发布统计
-        result.put("publishStats", getUserPublishStatistics(authorName));
+        result.put("publishStats", getUserPublishStatistics(username));
         
         // 热度统计
-        result.put("popularityStats", getUserPopularityStatistics(authorName));
+        result.put("popularityStats", getUserPopularityStatistics(username));
         
         // 点赞统计
         result.put("likeStats", getUserLikeStatistics(userId));
         
         // 最近活动（最近发布的文章）
         Pageable recentPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Blog> recentBlogs = blogRepository.findByAuthorNameAndIsPublished(authorName, true, recentPageable);
+        Page<Blog> recentBlogs = blogRepository.findByUserUsernameAndStatus(username, ArticleStatus.PUBLISHED, recentPageable);
         List<Map<String, Object>> recentActivity = recentBlogs.getContent().stream()
             .map(blog -> {
                 Map<String, Object> activityData = new HashMap<>();

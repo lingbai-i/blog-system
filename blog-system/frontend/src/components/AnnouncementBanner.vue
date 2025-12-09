@@ -30,7 +30,7 @@
       </div>
       <div class="announcement-close">
         <el-button 
-          type="text" 
+          text 
           @click="closeAnnouncement"
           :icon="Close"
           size="small"
@@ -58,6 +58,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Bell, Close } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -79,10 +80,11 @@ const fetchAnnouncements = async () => {
   }
 }
 
-// 显示公告详情
+// 跳转到公告详情页面
+const router = useRouter()
 const showAnnouncementDetail = (announcement) => {
-  selectedAnnouncement.value = announcement
-  dialogVisible.value = true
+  // 使用router跳转到公告详情页
+  router.push(`/announcements/${announcement.id}`)
 }
 
 // 关闭公告横幅

@@ -157,9 +157,27 @@ import axios from 'axios'
 import CommentSection from '@/components/CommentSection.vue'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
+import MarkdownIt from 'markdown-it'
 
 const router = useRouter()
 const route = useRoute()
+
+// Markdown解析器配置
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  breaks: true,
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        const result = hljs.highlight(str, { language: lang, ignoreIllegals: true })
+        return `<pre class="hljs"><code class="hljs language-${lang}">${result.value}</code></pre>`
+      } catch (__) {}
+    }
+    return `<pre class="hljs"><code class="hljs">${md.utils.escapeHtml(str)}</code></pre>`
+  }
+})
 
 // 响应式数据
 const blog = ref(null)
@@ -182,7 +200,13 @@ const formattedContent = computed(() => {
   // 检查内容是否包含 HTML 标签（Quill 编辑器生成的内容）
   const hasHtmlTags = /<[^>]+>/.test(content)
   
-  if (!hasHtmlTags) {
+  // 检查是否为Markdown格式（包含Markdown语法标记）
+  const hasMarkdownSyntax = /^#{1,6}\s|\*\*.*\*\*|\*.*\*|`.*`|\[.*\]\(.*\)|^\s*[-*+]\s|^\d+\.\s/m.test(content)
+  
+  if (!hasHtmlTags && hasMarkdownSyntax) {
+    // 如果是Markdown格式，使用Markdown解析器
+    content = md.render(content)
+  } else if (!hasHtmlTags) {
     // 如果是纯文本，转换换行符
     content = content.replace(/\n/g, '<br>')
   } else {
